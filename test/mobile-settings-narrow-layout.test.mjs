@@ -487,6 +487,15 @@ test('设置页内弹出的第三方模态框必须盖在设置弹窗之上，�
     }
   }
 
+  // 必须排除设置弹窗自身：DSH 0.1.7 起 VOzbGW_overlay 是 <body> 直接子级、且含 role=dialog
+  // 子元素，会被这条规则一并抬到 10050，从而与第三方模态根同层（可能让层叠修复复发）。
+  const zRule = gated.find((r) => /z-index\s*:\s*10050/.test(r.body.replace(/\s+/g, ' ')));
+  assert.ok(zRule, '应能定位到抬升 z-index 的那条门控规则');
+  assert.match(
+    zRule.selector,
+    /:not\(\[class\*="VOzbGW_overlay"\]\)/,
+    '抬升规则必须排除设置弹窗自身（新版 DSH 里它是 <body> 直接子级）',
+  );
   assert.ok(zDecl.length >= 1, '应有抬升第三方模态根 z-index 的声明');
   for (const z of zDecl) {
     assert.equal(z.v, '10050', `门控规则里的 z-index 必须全为 10050，发现 ${z.v}（选择器：${z.sel}）—— 后置覆盖规则也要被这条断言拦下`);

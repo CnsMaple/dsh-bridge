@@ -26,7 +26,7 @@
     "build:client": "node client/build.mjs",
     "build:lark": "node scripts/bundle-lark.mjs",
     "build:banner": "node scripts/generate-banner.mjs",
-    "prepack": "npm run build:lark && npm run build:client",
+    "prepack": "npm run build:client",
     "release:github": "node scripts/create-github-release.mjs",
     "lint": "eslint .",
     "test": "node --test test/*.test.mjs",

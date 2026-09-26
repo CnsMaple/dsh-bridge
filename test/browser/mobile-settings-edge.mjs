@@ -9,7 +9,8 @@ import { launchOptions, shotsDir, connect } from './helpers.mjs';
 
 const SHOTS = shotsDir('mobile-settings-edge');
 const CHROME = launchOptions().executablePath;
-const { cookie: c, cookieName: cn } = connect();
+const { port: PORT, cookie: c, cookieName: cn } = connect();
+const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 const out = [];
 const say = (name, ok, detail) => {
@@ -25,7 +26,7 @@ const browser = await puppeteer.launch({ executablePath: CHROME, headless: true,
   await page.setCacheEnabled(false);
   await page.setViewport({ width: 320, height: 480, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   await page.setCookie({ name: cn, value: c.slice(cn.length + 1), domain: '127.0.0.1', path: '/' });
-  await page.goto('http://127.0.0.1:3080/', { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded' });
   await new Promise((r) => setTimeout(r, 4000));
   await page.evaluate(() => document.querySelector('button[aria-label="Settings"]')?.click());
   await new Promise((r) => setTimeout(r, 1200));
@@ -85,7 +86,7 @@ for (const width of [375, 390]) {
   await page.setCacheEnabled(false);
   await page.setViewport({ width, height: 800, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   await page.setCookie({ name: cn, value: c.slice(cn.length + 1), domain: '127.0.0.1', path: '/' });
-  await page.goto('http://127.0.0.1:3080/', { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded' });
   await new Promise((r) => setTimeout(r, 4000));
   await page.evaluate(() => document.querySelector('button[aria-label="Settings"]')?.click());
   await new Promise((r) => setTimeout(r, 1000));
@@ -147,6 +148,10 @@ for (const width of [375, 390]) {
     `${JSON.stringify(advanced)}`,
   );
   say(`${width}px 内容区确实可横向滚动（maxScrollLeft>0）`, before.maxScrollLeft > 0, `scrollW/clientW=${before.optionsScrollW}/${before.optionsClientW}`);
+  if (!before.tabs.length) {
+    const txt = await page.evaluate(() => (document.querySelector('[class*="VOzbGW_options"]')?.innerText || '').replace(/\s+/g, ' ').slice(0, 160));
+    console.log(`  ⚠️ 市场页未渲染出页签，页面文本：${txt}`);
+  }
   await page.screenshot({ path: path.join(SHOTS, `${width}__market-scrolled.png`) });
   await page.close();
 }
@@ -157,7 +162,7 @@ for (const width of [375, 390]) {
   await page.setCacheEnabled(false);
   await page.setViewport({ width: 375, height: 667, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   await page.setCookie({ name: cn, value: c.slice(cn.length + 1), domain: '127.0.0.1', path: '/' });
-  await page.goto('http://127.0.0.1:3080/', { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded' });
   await new Promise((r) => setTimeout(r, 4000));
   await page.evaluate(() => document.querySelector('button[aria-label="Settings"]')?.click());
   await new Promise((r) => setTimeout(r, 1000));

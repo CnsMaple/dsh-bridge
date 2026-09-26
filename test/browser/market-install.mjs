@@ -13,7 +13,8 @@ import { launchOptions, shotsDir, connect } from './helpers.mjs';
 
 const SHOTS = shotsDir('market-install');
 const CHROME = launchOptions().executablePath;
-const { cookie: c, cookieName: cn } = connect();
+const { port: PORT, cookie: c, cookieName: cn } = connect();
+const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 const rows = [];
 const say = (n, ok, d) => {
@@ -36,7 +37,7 @@ for (const vp of VIEWPORTS) {
   await page.setCacheEnabled(false);
   await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   await page.setCookie({ name: cn, value: c.slice(cn.length + 1), domain: '127.0.0.1', path: '/' });
-  await page.goto('http://127.0.0.1:3080/', { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded' });
   await new Promise((r) => setTimeout(r, 4200));
   await page.evaluate(() => document.querySelector('button[aria-label="Settings"]')?.click());
   await new Promise((r) => setTimeout(r, 1200));
@@ -49,14 +50,22 @@ for (const vp of VIEWPORTS) {
     const ov = document.querySelector('[class*="VOzbGW_overlay"]');
     const o = ov.querySelector('[class*="VOzbGW_options"]');
     const b = [...o.querySelectorAll('button')].find((x) => /^Install$/i.test((x.textContent || '').trim()));
-    if (!b) return false;
+    if (!b) {
+      // 市场页自身渲染崩溃时这里会拿不到 Install —— 把页面文本带出去，便于区分
+      // 「第三方插件不兼容」与「本插件回归」
+      return { ok: false, marketText: (o.innerText || '').replace(/\s+/g, ' ').slice(0, 160) };
+    }
     b.click();
-    return true;
+    return { ok: true };
   });
   await new Promise((r) => setTimeout(r, 2500));
 
   const m = await page.evaluate(() => {
-    const dlgRoot = [...document.body.children].find((e) => e.tagName === 'DIV' && e.querySelector(':scope > div[role="dialog"]'));
+    // 排除设置弹窗自身：DSH 0.1.7 起 VOzbGW_overlay 是 <body> 直接子级，也同样含 role=dialog 子元素，
+    // 不排除就会把它当成「第三方模态根」，把设置导航按钮一并算进命中判定。
+    const dlgRoot = [...document.body.children].find(
+      (e) => e.tagName === 'DIV' && !String(e.className).includes('VOzbGW') && e.querySelector(':scope > div[role="dialog"]'),
+    );
     if (!dlgRoot) return { found: false };
     const inner = dlgRoot.querySelector(':scope > div[role="dialog"]');
     const ir = inner.getBoundingClientRect();
@@ -99,7 +108,8 @@ for (const vp of VIEWPORTS) {
     };
   });
 
-  console.log(`\n=== ${vp.n}（点 Install 命中=${clicked}）===`);
+  console.log(`\n=== ${vp.n}（点 Install 命中=${clicked.ok}）===`);
+  if (!clicked.ok) console.log(`  ⚠️ 市场页未提供 Install 按钮，页面文本：${clicked.marketText}`);
   console.log(JSON.stringify({ rootZ: m.rootZ, innerRect: m.innerRect, fitsX: m.fitsX, fitsY: m.fitsY, overflowY: m.innerOverflowY, maxH: m.innerMaxH, canScroll: m.canScroll, scrolledTo: m.scrolledTo, allSamplesInside: m.allSamplesInside, before: m.before, after: m.after }, null, 1));
 
   say(`${vp.n} 确认框已渲染`, m.found);

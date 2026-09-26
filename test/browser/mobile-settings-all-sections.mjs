@@ -7,7 +7,8 @@ import { launchOptions, shotsDir, connect } from './helpers.mjs';
 
 const SHOTS = shotsDir('mobile-settings-all-sections');
 const CHROME = launchOptions().executablePath;
-const { cookie: c, cookieName: cn } = connect();
+const { port: PORT, cookie: c, cookieName: cn } = connect();
+const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 const VIEWPORTS = [
   { name: '375x667', width: 375, height: 667, narrow: true },
@@ -24,7 +25,7 @@ for (const vp of VIEWPORTS) {
   await page.setCacheEnabled(false);
   await page.setViewport({ width: vp.width, height: vp.height, deviceScaleFactor: 1, isMobile: vp.narrow, hasTouch: vp.narrow });
   await page.setCookie({ name: cn, value: c.slice(cn.length + 1), domain: '127.0.0.1', path: '/' });
-  await page.goto('http://127.0.0.1:3080/', { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded' });
   await new Promise((r) => setTimeout(r, 4000));
   await page.evaluate(() => document.querySelector('button[aria-label="Settings"]')?.click());
   await new Promise((r) => setTimeout(r, 1200));

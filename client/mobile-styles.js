@@ -47,7 +47,12 @@ export const MOBILE_STYLES_CSS = `
        弹窗之上并盖住设置页。这是「模态就该盖在设置弹窗之上」的既定取舍：宁可让真模态
        可见，也不接受"弹了却点不到"。独立验收已实测该构造会命中；若将来真踩到，
        应改为按「该浮层是否可关闭」进一步收窄，而不是回退这条规则。 */
-    body:has(div[class*="VOzbGW_overlay"]) > div:has(> div[class*="mask"], > div[role="dialog"]) {
+    /* ⚠️ 必须排除设置弹窗自身：DSH 0.1.7 把 VOzbGW_overlay 变成了 <body> 的直接子级
+       （0.1.5 里它嵌在 #root 内部），它同样满足「body 子级 + 含 role=dialog 子元素」，
+       会被本条一并抬到 10050 —— 于是与第三方模态根同层、退化成按 DOM 顺序决胜，
+       刚修好的「安装确认框被盖住」就可能复发。:not(...) 把它排除，让设置弹窗继续由
+       它自己的 10002 规则定位，本条只抬**其它**顶层模态。 */
+    body:has(div[class*="VOzbGW_overlay"]) > div:has(> div[class*="mask"], > div[role="dialog"]):not([class*="VOzbGW_overlay"]) {
       z-index: 10050 !important;
     }
 
