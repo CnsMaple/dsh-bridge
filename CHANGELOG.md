@@ -4,6 +4,24 @@
 
 ---
 
+## [v2.11.1] - 2026-10-02
+
+> 本版为修复版：解决 DSH 0.1.7 升级后暴露的移动端「看不到最新消息」、设置弹窗层级误抬，以及 linux 下托管误判导致的 systemd 掉线问题。
+
+### 🐞 修复
+
+- **手机上聊天区「看不到最新消息」（PR #48，感谢 imroc）**：移动端主框架规则原用 `div[class*="_frame"]` 跨包通配选择器，除了命中有意的布局外壳（`[data-slot="root"]` 直接子元素），还会误伤 DSH 0.1.7 新增的聊天记录容器（`dsh-client-ui-chat` 的 `.EvIC1a_frame`）——给它强加 `height:100dvh + overflow:hidden` 后被钳到视口高度、溢出内容被裁掉，而外层滚动区已到底，表现为「看到旧消息、看不到最新消息」。现选择器收窄为 `[data-slot="root"] > div[class*="_frame"]`，仅命中布局外壳；对 0.1.5 / 0.1.6 宿主无行为差异。
+- **linux 下托管误判与 systemd 掉线**：真实 `/proc/self/cgroup` 带末尾换行且 cgroup v1 为多行，原解析按单行整体切分，导致 `endsWith('.service')` 判定失败、托管器被误判为 `self`，`Restart=on-failure` 下 dsh 掉线不自动拉起。现逐行解析并 trim；同时重启前为 `systemctl` 补齐默认 PATH 与 `XDG_RUNTIME_DIR`（`--user` 场景）、加 5s 执行超时兜底、自动创建日志目录。
+- **设置弹窗自身被层级规则误抬（适配 DSH 0.1.7）**：0.1.7 把设置弹窗（`VOzbGW_overlay`）从 `#root` 内部移为 `<body>` 直接子级，满足「body 子级 + 含 `role=dialog` 子元素」的抬升特征，被一并抬到第三方模态同层，退化成按 DOM 顺序决胜，「安装确认框被盖住」可能复发。现抬升规则排除设置弹窗自身，仍只抬其它顶层模态。
+
+### 🧪 测试
+
+- 新增 `test/restart-dsh.test.mjs` cgroup 多行/换行回归断言；`test/mobile-fixed-panel-offset.test.mjs` 新增 frame 规则限定回归守卫；`test/mobile-settings-narrow-layout.test.mjs` 新增抬升规则排除断言。全量 338 项测试 100% 通过。
+
+> ⚠️ 生效说明：客户端样式刷新页面即生效；重启守护逻辑改动需重启 dsh 后生效。
+
+---
+
 ## [v2.11.0] - 2026-09-28
 
 > 本版为客户端架构升级与环境解耦：支持桌面端宿主（如 Tauri）将设置面板作为独立组件嵌入并动态管理设置页入口；同时为 Android 移动壳及第三方自适应插件引入环境自适应让位与多级特性开关，消除界面冲突与遮挡。
