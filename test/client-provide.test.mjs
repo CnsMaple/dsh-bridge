@@ -266,3 +266,34 @@ test('移动端顶栏标题读取宿主会话层级面包屑（中英文锚点�
     '应仍操作移动端顶栏标题元素',
   );
 });
+
+// ---------- 8. 国际化：跟随 DSH 主体语言 ----------
+//
+// ① 移动端自绘 UI 文案走 locales.mjs（中英词典，按 <html lang> 取词，跟随主体语言）；
+// ② 插件管理页/市场显示名走 package.json 的 `locale/<lang>.json`（宿主按当前语言读
+//    meta.title/description，fallback 到包名）——exports 必须暴露 "./locale/*"，否则
+//     resolver 拒绝解析、管理页永远显示包名（如 @wenbin_wb/dsh-bridge）。
+
+test('客户端国际化：locales.mjs 存在且中英键一致', () => {
+  const localesSrc = readFileSync(resolve(repoRoot, 'client/locales.mjs'), 'utf8');
+  assert.match(localesSrc, /export const zh = \{/, '应有中文词典');
+  assert.match(localesSrc, /export const en = \{/, '应有英文词典');
+  assert.match(localesSrc, /document\.documentElement\.getAttribute\(['"]lang['"]\)/, '应按 <html lang> 跟随 DSH 主体语言');
+  // 中英键集合应一致（缺翻译立刻暴露）
+  const zhKeys = [...localesSrc.matchAll(/^ {2}['"]([^'"]+)['"]:/gm)].map((m) => m[1]);
+  const enBlock = localesSrc.slice(localesSrc.indexOf('export const en'));
+  const enKeys = [...enBlock.matchAll(/^ {2}['"]([^'"]+)['"]:/gm)].map((m) => m[1]);
+  assert.deepEqual(new Set(zhKeys), new Set(enKeys), 'zh/en 词典键集合必须一致');
+  assert.ok(zhKeys.length >= 20, '应有足够的 UI 文案键');
+});
+
+test('插件管理页本地化：locale/*.json 存在且 exports 暴露', () => {
+  const en = JSON.parse(readFileSync(resolve(repoRoot, 'locale/en.json'), 'utf8'));
+  const zh = JSON.parse(readFileSync(resolve(repoRoot, 'locale/zh.json'), 'utf8'));
+  assert.ok(en.meta?.title && en.meta?.description, 'locale/en.json 应有 meta.title/description');
+  assert.ok(zh.meta?.title && zh.meta?.description, 'locale/zh.json 应有 meta.title/description');
+  assert.deepEqual(new Set(Object.keys(en.meta)), new Set(Object.keys(zh.meta)), '中英 meta 字段应一致');
+  const pkg = JSON.parse(readFileSync(resolve(repoRoot, 'package.json'), 'utf8'));
+  assert.equal(pkg.exports['./locale/*'], './locale/*', 'exports 必须暴露 ./locale/*（否则管理页永远显示包名）');
+  assert.ok(pkg.files.includes('locale'), 'files 白名单必须含 locale（否则 npm publish 不带上）');
+});

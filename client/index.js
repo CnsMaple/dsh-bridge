@@ -13,6 +13,7 @@ import {
   getRuntimeFeatureOverrides,
 } from './mobile-yield.js'
 import { registerSettingsNavIcon } from './settings-nav-icon.js'
+import { createTranslator } from './locales.mjs'
 // dsh-bridge 客户端插件：设置页「远程访问」面板
 
 // 兼容非 HTTPS 环境（如手机局域网 HTTP 访问）：为非安全上下文补齐 crypto.randomUUID
@@ -121,6 +122,10 @@ const ISSUES_URL = 'https://github.com/wenbin-wb/dsh-bridge/issues/new';
 const TUNNEL_DOCS_URL = 'https://github.com/wenbin-wb/dsh-bridge/blob/main/docs/custom-tunnel.md';
 const CLOUDFLARE_TUTORIAL_URL = 'https://github.com/wenbin-wb/dsh-bridge/blob/main/docs/cloudflare-fixed-domain.md';
 
+// 模块级翻译函数：apply() 里随 ctx.locale 初始化（跟随 DSH 主体语言），
+// 供 setupMobileExperience / setupComposerCollapse 等各函数读取（不通过参数传递）。
+let localeT = (key) => key;
+
 // 生成升级命令（拼接具体版本号；用 add 而非 update，update --latest 受已安装依赖版本约束可能无法升级到最新版）
 function upgradeCommands(latest) {
   const spec = `@wenbin_wb/dsh-bridge@${latest}`;
@@ -131,6 +136,9 @@ function upgradeCommands(latest) {
 }
 
 const name = 'dsh-bridge';
+// 注：locale 服务不能通过 inject 声明（动态插件激活时该服务不在运行时上下文，
+// 声明会导致「entry did not activate」）；改用 apply 内 ctx.get('locale') 可选获取，
+// 无则退化为本地 en/zh 词典（见 locales.mjs）。
 const inject = ['slots', 'connection', 'workspaces', 'sessions'];
 
 // semver 比较：a > b
@@ -3939,7 +3947,7 @@ function setupMobileExperience(rpcCall, ctx) {
     // 左侧双横线菜单按钮 (DeepSeek App 原生图标)：联动展开 DSH 原生侧边栏会话列表
     const leftBtn = document.createElement('button');
     leftBtn.className = 'dsh-header-menu-btn';
-    leftBtn.title = '打开菜单';
+    leftBtn.title = localeT('menu.open');
     leftBtn.innerHTML = `
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
         <line x1="3" y1="8" x2="21" y2="8"></line>
@@ -3972,7 +3980,7 @@ function setupMobileExperience(rpcCall, ctx) {
     // 右侧 (+) 新建会话按钮 (DeepSeek App 圆形加号风格)
     const rightBtn = document.createElement('button');
     rightBtn.className = 'dsh-header-new-btn';
-    rightBtn.title = '新建会话';
+    rightBtn.title = localeT('menu.newSession');
     rightBtn.innerHTML = `
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="9.5"></circle>
@@ -4000,7 +4008,7 @@ function setupMobileExperience(rpcCall, ctx) {
   // 随会话切换实时更新，0.1.7 的 sessions.list 快照没有 current 字段（旧方案取不到 → 
   // 顶栏永远显示「新会话」）。crumbs 的 nav 带稳定 aria-label（中英双语），最后一级
   // crumb 就是当前会话标题；空会话时无 crumbs，回退「新会话」。
-  const MOBILE_TITLE_FALLBACK_TEXT = '新会话';
+  const MOBILE_TITLE_FALLBACK_TEXT = () => localeT('title.fallback');
   // 取宿主会话层级面包屑的「当前会话标题」。稳定锚点是 nav 的 aria-label（中英双语）；
   // 标题是最后一个 crumbSeg 里的「crumb（当前段）」，不是 nav 里任意最后一个 span——
   // 子 agent 会话会把末级 crumb 换成 dropdown（内含计数 span），取最后一个 span 会拿到
@@ -4038,9 +4046,9 @@ function setupMobileExperience(rpcCall, ctx) {
     if (!snap) return;
     const cur = snap.current ? snap.byId?.[snap.current] : null;
     if (!cur || cur.blank) {
-      setTitleText(MOBILE_TITLE_FALLBACK_TEXT);
+      setTitleText(MOBILE_TITLE_FALLBACK_TEXT());
     } else {
-      setTitleText(cur.displayTitle || cur.title || MOBILE_TITLE_FALLBACK_TEXT);
+      setTitleText(cur.displayTitle || cur.title || MOBILE_TITLE_FALLBACK_TEXT());
     }
   };
 
@@ -4088,7 +4096,7 @@ function setupMobileExperience(rpcCall, ctx) {
       if (bar && !bar.querySelector('.dsh-mobile-panel-close-btn')) {
         const btn = document.createElement('button');
         btn.className = 'dsh-mobile-panel-close-btn';
-        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg><span>返回对话</span>`;
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg><span>${localeT('panel.backToChat')}</span>`;
         btn.onclick = (e) => {
           e.stopPropagation();
           document.body.classList.remove('dsh-workbench-open');
@@ -5160,7 +5168,7 @@ function setupComposerCollapse() {
     if (!utils) return null;
     const btn = document.createElement('button');
     btn.className = 'dsh-header-fold-btn';
-    btn.setAttribute('aria-label', '收起/展开输入框');
+    btn.setAttribute('aria-label', `${localeT('composer.expand')} / ${localeT('composer.collapse')}`);
     btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="18" x2="21" y2="18"></line><polyline points="6 9 12 15 18 9"></polyline></svg>';
     // 插到 session 下载按钮左侧（紧邻原生工具钮）
     if (logBtn && logBtn.parentElement === utils) utils.insertBefore(btn, logBtn);
@@ -5177,7 +5185,7 @@ function setupComposerCollapse() {
     if (!scrollBody) return null;
     bar = document.createElement('div');
     bar.className = 'dsh-composer-collapsed-bar';
-    bar.textContent = '\u270f\ufe0f 点击输入消息…';
+    bar.textContent = localeT('composer.placeholder');
     scrollBody.insertBefore(bar, seat);
     bar.addEventListener('click', () => setCollapsed(false));
     return bar;
@@ -5202,7 +5210,7 @@ function setupComposerCollapse() {
   const updateButton = (collapsed) => {
     const btn = getFoldBtn();
     if (!btn) return;
-    btn.title = collapsed ? '展开输入框' : '收起输入框，最大化对话阅读区';
+    btn.title = collapsed ? localeT('composer.expand') : localeT('composer.collapse');
     const icon = collapsed
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"></rect><line x1="6" y1="10" x2="6.01" y2="10"></line><line x1="10" y1="10" x2="10.01" y2="10"></line><line x1="14" y1="10" x2="14.01" y2="10"></line><line x1="6" y1="14" x2="10" y2="14"></line><line x1="14" y1="14" x2="18" y2="14"></line></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="18" x2="21" y2="18"></line><polyline points="6 9 12 15 18 9"></polyline></svg>';
@@ -5269,6 +5277,11 @@ function setupComposerCollapse() {
 
 function apply(ctx) {
   window.__dshClientCtx = ctx;
+  // 国际化：创建翻译器（跟随 DSH 主体语言，读 <html lang>；有 locale 服务则顺带注册
+  // 词典，拿不到/被门控也不抛错）。注：locale 服务不能声明进 inject——动态插件声明
+  // 会导致激活等待（宿主 env 无该服务，entry did not activate）。
+  const intl = createTranslator(ctx);
+  localeT = (key, vars) => intl.t(key, vars);
   // 放在最前：交互层先就绪，后续任何初始化抛异常都不会留下「CSS 生效但监听器缺失」
   // 的状态（CSS 6.2 块另有 <html> 就绪开关双重兜底）。
   setupSettingsDrilldown();

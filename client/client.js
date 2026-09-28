@@ -1568,6 +1568,148 @@ function registerSettingsNavIcon(resolveLabel = () => "\u8FDC\u7A0B\u8BBF\u95EE"
   };
 }
 
+// client/locales.mjs
+var LOCALE_NAMESPACE = "@wenbin_wb/dsh-bridge";
+var zh = {
+  // 移动端顶栏
+  "menu.open": "\u6253\u5F00\u83DC\u5355",
+  "menu.newSession": "\u65B0\u5EFA\u4F1A\u8BDD",
+  "title.fallback": "\u65B0\u4F1A\u8BDD",
+  // 移动端输入区
+  "composer.placeholder": "\u270D\uFE0F \u70B9\u51FB\u8F93\u5165\u6D88\u606F\u2026",
+  "composer.expand": "\u5C55\u5F00\u8F93\u5165\u6846",
+  "composer.collapse": "\u6536\u8D77\u8F93\u5165\u6846\uFF0C\u6700\u5927\u5316\u5BF9\u8BDD\u9605\u8BFB\u533A",
+  "panel.backToChat": "\u8FD4\u56DE\u5BF9\u8BDD",
+  // 移动端设置面板 / 抽屉（dsh-bridge 自绘部分）
+  "workspace.choose": "\u9009\u62E9\u7535\u8111\u5DE5\u4F5C\u533A",
+  "workspace.reading": "\u6B63\u5728\u8BFB\u53D6\u76EE\u5F55\u5185\u5BB9\u2026",
+  "workspace.currentDir": "\u5F53\u524D\u76EE\u5F55:",
+  "workspace.registeredHint": "\u5DF2\u6CE8\u518C\u5DE5\u4F5C\u533A (${count} \u4E2A\uFF0C\u70B9\u51FB\u76F4\u63A5\u5207\u6362)\uFF1A",
+  "workspace.enterHint": "\u70B9\u51FB\u8FDB\u5165\u6587\u4EF6\u5939\uFF0C\u6216\u70B9\u51FB\u300C+ \u9009\u4E3A\u5DE5\u4F5C\u533A\u300D\u76F4\u63A5\u6DFB\u52A0\u5E76\u5207\u6362",
+  "workspace.unlockHint": "\u8FDC\u7A0B\u8BBF\u95EE\u65F6\u6D4F\u89C8/\u6DFB\u52A0\u5DE5\u4F5C\u533A\u9700\u8F93\u5165\u540E\u53F0\u7BA1\u7406\u5BC6\u7801\u89E3\u9501\uFF08\u4E0E\u8BBF\u95EE\u5BC6\u7801\u4E0D\u540C\uFF09\u3002",
+  "workspace.chooseFolder": "\u9009\u62E9\u5DE5\u4F5C\u533A",
+  "workspace.addFolder": "\u6DFB\u52A0",
+  "workspace.refresh": "\u5237\u65B0\u76EE\u5F55",
+  "workspace.back": "\u8FD4\u56DE\u4E0A\u4E00\u7EA7",
+  "workspace.filter": "\u8FC7\u6EE4\u5B50\u6587\u4EF6\u5939\u2026",
+  "workspace.more": "\u8FD8\u6709\u66F4\u591A",
+  "workspace.addSubfolder": "\u76F4\u63A5\u6DFB\u52A0\u6B64\u5B50\u6587\u4EF6\u5939\u4E3A\u5DE5\u4F5C\u533A\u5E76\u8FDB\u5165",
+  "workspace.onlyAdmin": "\u4EC5\u9650\u672C\u673A\u7BA1\u7406",
+  "workspace.isCurrent": "\u5F53\u524D\u4E3B\u5165\u53E3",
+  "workspace.isFallback": "\u4E3B\u5165\u53E3",
+  // 远程访问面板
+  "access.copyLink": "\u590D\u5236\u94FE\u63A5",
+  "access.copied": "\u2713 \u5DF2\u590D\u5236",
+  "access.hideQr": "\u9690\u85CF\u4E8C\u7EF4\u7801",
+  "access.showQr": "\u663E\u793A\u4E8C\u7EF4\u7801",
+  "access.privateEnv": "\u8BF7\u5728\u79C1\u5BC6\u73AF\u5883\u4E0B\u4F7F\u7528",
+  "access.switching": "\u5207\u6362\u4E2D\u2026",
+  "access.publicEntry": "\u516C\u7F51\u8BBF\u95EE\u5165\u53E3",
+  "access.copy": "\u590D\u5236",
+  "access.stopReconnect": "\u505C\u6B62\u91CD\u8FDE",
+  "access.close": "\u5173\u95ED",
+  "access.connecting": "\u8FDE\u63A5\u4E2D\u2026",
+  "access.downloading": "\u4E0B\u8F7D\u4E2D\u2026",
+  "access.enable": "\u5F00\u542F\u516C\u7F51\u96A7\u9053",
+  "access.scanHint": "\u8BF7\u5728\u79C1\u5BC6\u73AF\u5883\u4E0B\u626B\u7801\u4F7F\u7528",
+  "access.autoStart": "\u968F DSH \u542F\u52A8\u81EA\u52A8\u5F00\u542F",
+  "access.tunnelConfig": "\u96A7\u9053\u914D\u7F6E",
+  "access.expand": "\u5C55\u5F00 \u25BE",
+  "access.collapse": "\u6536\u8D77 \u25B4",
+  "access.saveError": "\u4FDD\u5B58\u914D\u7F6E\u5931\u8D25",
+  "access.serverConfig": "\u96A7\u9053\u670D\u52A1\u5668\u914D\u7F6E",
+  "access.saving": "\u4FDD\u5B58\u4E2D\u2026",
+  "access.saved": "\u2713 \u5DF2\u4FDD\u5B58",
+  "access.saveConfig": "\u4FDD\u5B58\u914D\u7F6E",
+  "access.clear": "\u6E05\u9664",
+  "access.externalTunnel": "\u5916\u90E8\u5DF2\u90E8\u7F72\u96A7\u9053",
+  "access.saveFixed": "\u4FDD\u5B58\u56FA\u5B9A\u57DF\u540D\u914D\u7F6E",
+  "access.updateFailed": "\u66F4\u65B0\u5931\u8D25",
+  "access.securityHint": "\u8BBE\u7F6E\u5916\u90E8\u8BBF\u5BA2\u8BBF\u95EE\u5BC6\u7801",
+  "access.goSetup": "\u53BB\u5F00\u542F \u2794",
+  "access.gotoSettings": "\u8BBE\u7F6E \u2794",
+  "access.tutorial": "\u67E5\u770B\u81EA\u5EFA\u96A7\u9053\u670D\u52A1\u5668\u642D\u5EFA\u6559\u7A0B"
+};
+var en = {
+  "menu.open": "Open menu",
+  "menu.newSession": "New session",
+  "title.fallback": "New Session",
+  "composer.placeholder": "\u270D\uFE0F Tap to type a message\u2026",
+  "composer.expand": "Expand input",
+  "composer.collapse": "Collapse input to maximize chat view",
+  "panel.backToChat": "Back to chat",
+  "workspace.choose": "Choose a workspace",
+  "workspace.reading": "Reading directory\u2026",
+  "workspace.currentDir": "Current directory:",
+  "workspace.registeredHint": "Registered workspaces (${count}, click to switch):",
+  "workspace.enterHint": "Enter a folder, or tap \u201C+ Select as workspace\u201D to add & switch",
+  "workspace.unlockHint": "Browsing/adding workspaces remotely requires the admin password to unlock (different from the access password).",
+  "workspace.chooseFolder": "Choose workspace",
+  "workspace.addFolder": "Add",
+  "workspace.refresh": "Refresh",
+  "workspace.back": "Back",
+  "workspace.filter": "Filter subfolders\u2026",
+  "workspace.more": "More",
+  "workspace.addSubfolder": "Add this subfolder as a workspace and enter",
+  "workspace.onlyAdmin": "Local admin only",
+  "workspace.isCurrent": "Current entry",
+  "workspace.isFallback": "Main entry",
+  "access.copyLink": "Copy link",
+  "access.copied": "\u2713 Copied",
+  "access.hideQr": "Hide QR",
+  "access.showQr": "Show QR",
+  "access.privateEnv": "Use in a private environment",
+  "access.switching": "Switching\u2026",
+  "access.publicEntry": "Public access entry",
+  "access.copy": "Copy",
+  "access.stopReconnect": "Stop reconnecting",
+  "access.close": "Close",
+  "access.connecting": "Connecting\u2026",
+  "access.downloading": "Downloading\u2026",
+  "access.enable": "Enable public tunnel",
+  "access.scanHint": "Scan in a private environment",
+  "access.autoStart": "Start automatically with DSH",
+  "access.tunnelConfig": "Tunnel configuration",
+  "access.expand": "Expand \u25BE",
+  "access.collapse": "Collapse \u25B4",
+  "access.saveError": "Failed to save configuration",
+  "access.serverConfig": "Tunnel server configuration",
+  "access.saving": "Saving\u2026",
+  "access.saved": "\u2713 Saved",
+  "access.saveConfig": "Save configuration",
+  "access.clear": "Clear",
+  "access.externalTunnel": "External tunnel",
+  "access.saveFixed": "Save fixed-domain configuration",
+  "access.updateFailed": "Update failed",
+  "access.securityHint": "Set an external visitor access password",
+  "access.goSetup": "Set up \u2794",
+  "access.gotoSettings": "Settings \u2794",
+  "access.tutorial": "View the self-hosted tunnel server tutorial"
+};
+function createTranslator(ctx) {
+  const active = () => {
+    const lang = (typeof document !== "undefined" ? document.documentElement.getAttribute("lang") : "") || "";
+    return lang.toLowerCase().startsWith("zh") ? "zh" : "en";
+  };
+  const entryOf = (key) => ({ zh: zh[key], en: en[key] });
+  const t = (key, vars) => {
+    const e = entryOf(key);
+    let text = e[active()] ?? e.en ?? e.zh ?? "";
+    if (vars && text) {
+      for (const [k, v] of Object.entries(vars)) text = text.replaceAll(`\${${k}}`, String(v));
+    }
+    return text;
+  };
+  try {
+    const locale = ctx && (typeof ctx.get === "function" ? ctx.get("locale") : ctx.locale);
+    if (locale && typeof locale.register === "function") {
+      locale.register(LOCALE_NAMESPACE, { zh, en });
+    }
+  } catch {
+  }
+  return { t, active };
+}
+
 // lib/bridge-rpc-constants.js
 var BRIDGE_RPC_CHANNEL = "/dsh-bridge";
 var BRIDGE_ENDPOINTS = {
@@ -1758,6 +1900,7 @@ var RELEASES_URL = "https://github.com/wenbin-wb/dsh-bridge/releases";
 var ISSUES_URL = "https://github.com/wenbin-wb/dsh-bridge/issues/new";
 var TUNNEL_DOCS_URL = "https://github.com/wenbin-wb/dsh-bridge/blob/main/docs/custom-tunnel.md";
 var CLOUDFLARE_TUTORIAL_URL = "https://github.com/wenbin-wb/dsh-bridge/blob/main/docs/cloudflare-fixed-domain.md";
+var localeT = (key) => key;
 function upgradeCommands(latest) {
   const spec = `@wenbin_wb/dsh-bridge@${latest}`;
   return [
@@ -5909,7 +6052,7 @@ function setupMobileExperience(rpcCall, ctx) {
     header.className = "dsh-mobile-app-header";
     const leftBtn = document.createElement("button");
     leftBtn.className = "dsh-header-menu-btn";
-    leftBtn.title = "\u6253\u5F00\u83DC\u5355";
+    leftBtn.title = localeT("menu.open");
     leftBtn.innerHTML = `
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
         <line x1="3" y1="8" x2="21" y2="8"></line>
@@ -5935,7 +6078,7 @@ function setupMobileExperience(rpcCall, ctx) {
     };
     const rightBtn = document.createElement("button");
     rightBtn.className = "dsh-header-new-btn";
-    rightBtn.title = "\u65B0\u5EFA\u4F1A\u8BDD";
+    rightBtn.title = localeT("menu.newSession");
     rightBtn.innerHTML = `
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="9.5"></circle>
@@ -5954,7 +6097,7 @@ function setupMobileExperience(rpcCall, ctx) {
     header.appendChild(rightBtn);
     document.body.appendChild(header);
   }
-  const MOBILE_TITLE_FALLBACK_TEXT = "\u65B0\u4F1A\u8BDD";
+  const MOBILE_TITLE_FALLBACK_TEXT = () => localeT("title.fallback");
   const readHostSessionTitle = () => {
     if (typeof document === "undefined") return "";
     const nav = document.querySelector('nav[aria-label="Session hierarchy"], nav[aria-label="\u4F1A\u8BDD\u5C42\u7EA7"]');
@@ -5983,9 +6126,9 @@ function setupMobileExperience(rpcCall, ctx) {
     if (!snap) return;
     const cur = snap.current ? snap.byId?.[snap.current] : null;
     if (!cur || cur.blank) {
-      setTitleText(MOBILE_TITLE_FALLBACK_TEXT);
+      setTitleText(MOBILE_TITLE_FALLBACK_TEXT());
     } else {
-      setTitleText(cur.displayTitle || cur.title || MOBILE_TITLE_FALLBACK_TEXT);
+      setTitleText(cur.displayTitle || cur.title || MOBILE_TITLE_FALLBACK_TEXT());
     }
   };
   syncMobileTitle();
@@ -6027,7 +6170,7 @@ function setupMobileExperience(rpcCall, ctx) {
       if (bar && !bar.querySelector(".dsh-mobile-panel-close-btn")) {
         const btn = document.createElement("button");
         btn.className = "dsh-mobile-panel-close-btn";
-        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg><span>\u8FD4\u56DE\u5BF9\u8BDD</span>`;
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg><span>${localeT("panel.backToChat")}</span>`;
         btn.onclick = (e) => {
           e.stopPropagation();
           document.body.classList.remove("dsh-workbench-open");
@@ -6910,7 +7053,7 @@ function setupComposerCollapse() {
     if (!utils) return null;
     const btn = document.createElement("button");
     btn.className = "dsh-header-fold-btn";
-    btn.setAttribute("aria-label", "\u6536\u8D77/\u5C55\u5F00\u8F93\u5165\u6846");
+    btn.setAttribute("aria-label", `${localeT("composer.expand")} / ${localeT("composer.collapse")}`);
     btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="18" x2="21" y2="18"></line><polyline points="6 9 12 15 18 9"></polyline></svg>';
     if (logBtn && logBtn.parentElement === utils) utils.insertBefore(btn, logBtn);
     else utils.appendChild(btn);
@@ -6931,7 +7074,7 @@ function setupComposerCollapse() {
     if (!scrollBody) return null;
     bar = document.createElement("div");
     bar.className = "dsh-composer-collapsed-bar";
-    bar.textContent = "\u270F\uFE0F \u70B9\u51FB\u8F93\u5165\u6D88\u606F\u2026";
+    bar.textContent = localeT("composer.placeholder");
     scrollBody.insertBefore(bar, seat);
     bar.addEventListener("click", () => setCollapsed(false));
     return bar;
@@ -6966,7 +7109,7 @@ function setupComposerCollapse() {
   const updateButton = (collapsed) => {
     const btn = getFoldBtn();
     if (!btn) return;
-    btn.title = collapsed ? "\u5C55\u5F00\u8F93\u5165\u6846" : "\u6536\u8D77\u8F93\u5165\u6846\uFF0C\u6700\u5927\u5316\u5BF9\u8BDD\u9605\u8BFB\u533A";
+    btn.title = collapsed ? localeT("composer.expand") : localeT("composer.collapse");
     const icon = collapsed ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"></rect><line x1="6" y1="10" x2="6.01" y2="10"></line><line x1="10" y1="10" x2="10.01" y2="10"></line><line x1="14" y1="10" x2="14.01" y2="10"></line><line x1="6" y1="14" x2="10" y2="14"></line><line x1="14" y1="14" x2="18" y2="14"></line></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="18" x2="21" y2="18"></line><polyline points="6 9 12 15 18 9"></polyline></svg>';
     const existing = btn.querySelector("svg");
     if (!existing || existing.outerHTML !== icon) btn.innerHTML = icon;
@@ -7029,6 +7172,8 @@ function setupComposerCollapse() {
 }
 function apply(ctx) {
   window.__dshClientCtx = ctx;
+  const intl = createTranslator(ctx);
+  localeT = (key, vars) => intl.t(key, vars);
   setupSettingsDrilldown();
   if (typeof ctx.effect === "function") {
     ctx.effect(() => registerSettingsNavIcon(() => "\u8FDC\u7A0B\u8BBF\u95EE"), "dsh-bridge: settings nav icon");
