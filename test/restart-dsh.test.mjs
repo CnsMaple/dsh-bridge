@@ -64,6 +64,11 @@ function makeService() {
 test('parseSystemdUnit 取最内层单元（不能被祖先的 user@1000.service 骗到）', () => {
   assert.equal(parseSystemdUnit(USER_CGROUP), 'dsh-web.service');
   assert.equal(parseSystemdUnit(SYSTEM_CGROUP), 'dsh.service');
+  // 关键回归：真实 /proc/self/cgroup 均带末尾换行符，且 cgroup v1 为多行
+  assert.equal(parseSystemdUnit(USER_CGROUP + '\n'), 'dsh-web.service');
+  assert.equal(parseSystemdUnit(USER_CGROUP + '\r\n'), 'dsh-web.service');
+  const MULTILINE_CGROUP = `12:memory:/user.slice/user-1000.slice/user@1000.service/app.slice/dsh-web.service\n0::/user.slice/user-1000.slice/user@1000.service/app.slice/dsh-web.service\n`;
+  assert.equal(parseSystemdUnit(MULTILINE_CGROUP), 'dsh-web.service');
   assert.equal(parseSystemdUnit('0::/'), '');
   assert.equal(parseSystemdUnit(''), '');
   // 最内层不是 .service（容器目录 / scope）→ 判空，绝不能向上游取祖先单元
