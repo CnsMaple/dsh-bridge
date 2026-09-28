@@ -4,6 +4,28 @@
 
 ---
 
+## [v2.11.0] - 2026-09-28
+
+> 本版为客户端架构升级与环境解耦：支持桌面端宿主（如 Tauri）将设置面板作为独立组件嵌入并动态管理设置页入口；同时为 Android 移动壳及第三方自适应插件引入环境自适应让位与多级特性开关，消除界面冲突与遮挡。
+
+### ✨ 新功能
+
+- **客户端宿主接入面（对齐 #51）**：在客户端入口暴露 Cordis 反射服务 `ctx.provide('dsh-bridge', { version: 1, render, setSettingsVisible, settingsVisible, configureFeatures, getFeatures })`。桌面端宿主（如 DSH Desktop / Tauri）可调用 `render()` 将 `BridgePanel` 现构造嵌入自定义侧栏或扩展容器，支持 `preferredTab` 指定默认停靠页并保持动态响应；收编后可调用 `setSettingsVisible(false)` 动态撤下全局设置页中的重复条目。老宿主环境下平稳降级。
+- **设置页左侧导航栏图标定制**：新增 `client/settings-nav-icon.js`，通过 CSS mask 将设置中心原生回退的通用小齿轮（gear）替换为「远程访问 / 手机无线连接」专属矢量图标，颜色自动跟随 `currentColor` 保持原生悬停与激活态一致。
+- **移动端多级特性开关与排障支持（对齐 #52）**：新增 `client/mobile-yield.js`，支持通过 URL 查询参数（如 `?dsh_bridge_tweaks=0` 全局禁用、`?dsh_mobile_header=0` 仅禁用顶栏）、宿主全局配置（`window.__DSH_BRIDGE_CONFIG__`）、运行时反射服务或本地存储细粒度控制移动端 UI 特性。
+
+### 🐞 修复
+
+- **Android 移动壳/已有自适应插件下的界面冲突与顶栏遮挡（#52）**：在 Android 原生 WebView 壳（如 `com.dsharnessmobile.shell`）或已加载移动自适应插件（如 `@dsh-android/dsh-client-ui-responsive`）的环境下，插件主动避让自建 body 级顶栏与全局覆盖样式，杜绝双重顶栏重叠、设置页错位与触控遮挡失效。
+
+### 🧪 测试
+
+- 新增 `test/mobile-yield.test.mjs`（11 条）、`test/client-provide.test.mjs`（6 条）与 `test/settings-nav-icon.test.mjs`（3 条），全量 337 项测试 100% 通过。
+
+> ⚠️ 生效说明：纯前端改动，刷新页面即可生效，无需重启 dsh。
+
+---
+
 ## [v2.10.15] - 2026-09-25
 
 > 本版为设置页关闭按钮的可用性微调：手机上「✕」更容易点中。

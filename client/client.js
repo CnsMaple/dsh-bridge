@@ -1374,6 +1374,166 @@ function shouldYieldToOfficialPicker(facts) {
   return Boolean(facts?.local) && Boolean(facts?.officialPicker);
 }
 
+// client/mobile-yield.js
+var FEATURES = {
+  MOBILE_HEADER: "mobileHeader",
+  MOBILE_STYLES: "mobileStyles",
+  COMPOSER_COLLAPSE: "composerCollapse"
+};
+var runtimeFeatureOverrides = {};
+function setRuntimeFeatureOverrides(overrides) {
+  if (overrides && typeof overrides === "object") {
+    runtimeFeatureOverrides = { ...runtimeFeatureOverrides, ...overrides };
+  }
+}
+function getRuntimeFeatureOverrides() {
+  return { ...runtimeFeatureOverrides };
+}
+function detectMobileShellOrResponsivePlugin() {
+  if (typeof window === "undefined") return false;
+  if (window.__DSH_MOBILE_SHELL__ || window.__TAURI__ || window.__DSH_DESKTOP__) {
+    return true;
+  }
+  if (window.__DSH_CLIENT_UI_RESPONSIVE__) {
+    return true;
+  }
+  if (typeof document !== "undefined") {
+    if (document.querySelector("[data-dsh-responsive-mobile]") || document.querySelector("[data-dsh-mobile-shell]")) {
+      return true;
+    }
+  }
+  return false;
+}
+function isFeatureEnabled(featureName, defaultDetector) {
+  if (typeof window === "undefined") {
+    return typeof defaultDetector === "function" ? defaultDetector() : true;
+  }
+  try {
+    if (window.location && window.location.search) {
+      const params = new URLSearchParams(window.location.search);
+      const tweaksVal = params.get("dsh_bridge_tweaks") ?? params.get("dsh_mobile_tweaks");
+      if (tweaksVal === "0" || tweaksVal === "false" || tweaksVal === "off") {
+        return false;
+      }
+      if (tweaksVal === "1" || tweaksVal === "true" || tweaksVal === "on") {
+        return true;
+      }
+      const kebabName = featureName.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`);
+      const specificVal = params.get(`dsh_${kebabName}`) ?? params.get(`dsh_${featureName}`);
+      if (specificVal === "0" || specificVal === "false" || specificVal === "off") {
+        return false;
+      }
+      if (specificVal === "1" || specificVal === "true" || specificVal === "on") {
+        return true;
+      }
+    }
+  } catch {
+  }
+  try {
+    const hostConfig = window.__DSH_BRIDGE_CONFIG__;
+    if (hostConfig && typeof hostConfig === "object") {
+      if (hostConfig.disablePageTweaks === true || hostConfig.disableMobileTweaks === true) {
+        return false;
+      }
+      if (typeof hostConfig[featureName] === "boolean") {
+        return hostConfig[featureName];
+      }
+    }
+  } catch {
+  }
+  if (typeof runtimeFeatureOverrides[featureName] === "boolean") {
+    return runtimeFeatureOverrides[featureName];
+  }
+  try {
+    if (window.localStorage) {
+      const stored = window.localStorage.getItem(`dsh_bridge:feature:${featureName}`);
+      if (stored === "0" || stored === "false") return false;
+      if (stored === "1" || stored === "true") return true;
+    }
+  } catch {
+  }
+  if (typeof defaultDetector === "function") {
+    return defaultDetector();
+  }
+  return true;
+}
+function shouldYieldMobileHeader() {
+  return !isFeatureEnabled(FEATURES.MOBILE_HEADER, () => {
+    return !detectMobileShellOrResponsivePlugin();
+  });
+}
+function shouldYieldMobileStyles() {
+  return !isFeatureEnabled(FEATURES.MOBILE_STYLES, () => {
+    return !detectMobileShellOrResponsivePlugin();
+  });
+}
+function shouldYieldComposerCollapse() {
+  return !isFeatureEnabled(FEATURES.COMPOSER_COLLAPSE, () => {
+    return !detectMobileShellOrResponsivePlugin();
+  });
+}
+
+// client/settings-nav-icon.js
+var SETTINGS_NAV_MARKER = "data-dsh-bridge-settings-nav";
+var REMOTE_NAV_SVG = `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='10' height='16' x='3' y='4' rx='2'/><path d='M7 16h2'/><path d='M17 8a4 4 0 0 1 0 8'/><path d='M20 5a8 8 0 0 1 0 14'/></svg>`;
+function getNavIconCss(customSvg = REMOTE_NAV_SVG) {
+  const maskUrl = `data:image/svg+xml,${encodeURIComponent(customSvg)}`;
+  return `
+[${SETTINGS_NAV_MARKER}] > svg:first-child {
+  display: none !important;
+}
+[${SETTINGS_NAV_MARKER}]::before {
+  content: '';
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+  -webkit-mask: url("${maskUrl}") center / contain no-repeat;
+  mask: url("${maskUrl}") center / contain no-repeat;
+}
+`;
+}
+function registerSettingsNavIcon(resolveLabel = () => "\u8FDC\u7A0B\u8BBF\u95EE") {
+  if (typeof document === "undefined") return () => {
+  };
+  const styleId = "dsh-bridge-settings-nav-icon-style";
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.dataset.plugin = "@wenbin_wb/dsh-bridge";
+    style.dataset.pluginCss = "@wenbin_wb/dsh-bridge/settings-nav-icon";
+    style.textContent = getNavIconCss();
+    document.head.appendChild(style);
+  }
+  let disposed = false;
+  const sync = () => {
+    if (disposed) return;
+    const currentLabel = typeof resolveLabel === "function" ? resolveLabel().trim() : "\u8FDC\u7A0B\u8BBF\u95EE";
+    const buttons = document.querySelectorAll('[role="dialog"] nav button, div[class*="VOzbGW_nav"] button');
+    for (const button of buttons) {
+      const text = button.textContent?.trim() || "";
+      if (currentLabel.length > 0 && (text === currentLabel || text.includes(currentLabel))) {
+        button.setAttribute(SETTINGS_NAV_MARKER, "");
+      } else if (button.hasAttribute(SETTINGS_NAV_MARKER)) {
+        button.removeAttribute(SETTINGS_NAV_MARKER);
+      }
+    }
+  };
+  sync();
+  let observer = null;
+  if (typeof MutationObserver !== "undefined") {
+    observer = new MutationObserver(sync);
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+  return () => {
+    disposed = true;
+    if (observer) observer.disconnect();
+    document.querySelectorAll(`[${SETTINGS_NAV_MARKER}]`).forEach((el) => el.removeAttribute(SETTINGS_NAV_MARKER));
+    const styleEl = document.getElementById(styleId);
+    if (styleEl) styleEl.remove();
+  };
+}
+
 // lib/bridge-rpc-constants.js
 var BRIDGE_RPC_CHANNEL = "/dsh-bridge";
 var BRIDGE_ENDPOINTS = {
@@ -4860,10 +5020,13 @@ function TabBar({ active, onChange, dots }) {
     })
   );
 }
-function BridgePanel({ rpcCall }) {
+function BridgePanel({ rpcCall, preferredTab }) {
   const [status, setStatus] = React.useState(null);
   const [err, setErr] = React.useState(null);
-  const [activeTab, setActiveTab] = React.useState("lan");
+  const [activeTab, setActiveTab] = React.useState(preferredTab || "lan");
+  React.useEffect(() => {
+    if (preferredTab) setActiveTab(preferredTab);
+  }, [preferredTab]);
   const [platforms, setPlatforms] = React.useState(null);
   const [selectedPlatform, setSelectedPlatform] = React.useState("wechat");
   const [copiedUrl, setCopiedUrl] = React.useState("");
@@ -5645,6 +5808,7 @@ function BridgePanel({ rpcCall }) {
 }
 function injectMobileStyles() {
   if (typeof document === "undefined") return;
+  if (shouldYieldMobileStyles()) return;
   if (document.getElementById("dsh-bridge-mobile-styles")) return;
   const style = document.createElement("style");
   style.id = "dsh-bridge-mobile-styles";
@@ -5703,6 +5867,7 @@ function setupSettingsDrilldown() {
 function setupMobileExperience(rpcCall, ctx) {
   if (typeof document === "undefined" || typeof window === "undefined") return;
   injectMobileStyles();
+  if (shouldYieldMobileHeader()) return;
   let header = document.querySelector(".dsh-mobile-app-header");
   let titleEl = document.querySelector(".dsh-mobile-header-title");
   if (!header) {
@@ -6659,8 +6824,9 @@ function setupIosKeyboardAdapter() {
   });
 }
 function setupComposerCollapse() {
-  if (typeof window === "undefined" || typeof document === "undefined") return;
+  if (typeof window === "undefined" || typeof document === "undefined" || typeof MutationObserver === "undefined") return;
   if (window.innerWidth > MOBILE_MAX_WIDTH) return;
+  if (shouldYieldComposerCollapse()) return;
   const LS_KEY = "dsh-composer-fold";
   let bar = null;
   let busy = false;
@@ -6793,6 +6959,11 @@ function setupComposerCollapse() {
 function apply(ctx) {
   window.__dshClientCtx = ctx;
   setupSettingsDrilldown();
+  if (typeof ctx.effect === "function") {
+    ctx.effect(() => registerSettingsNavIcon(() => "\u8FDC\u7A0B\u8BBF\u95EE"), "dsh-bridge: settings nav icon");
+  } else {
+    registerSettingsNavIcon(() => "\u8FDC\u7A0B\u8BBF\u95EE");
+  }
   const rpcCall = (endpoint, payload, signal) => ctx.connection.rpc.call(BRIDGE_RPC_CHANNEL, endpoint, payload, signal);
   window.__dshOpenRemoteWorkspaceModal = (onAdded, onPickDirect, onCancel) => showRemoteWorkspaceDialog(rpcCall, onAdded, ctx, onPickDirect, onCancel);
   setupIosKeyboardAdapter();
@@ -6824,19 +6995,74 @@ function apply(ctx) {
       );
     })
   );
-  ctx.slots.inject(
-    "settings.section",
-    () => ctx.slots.register(
-      {
-        name: "settings.section",
-        id: "dsh-bridge",
-        order: 10,
-        label: () => "\u8FDC\u7A0B\u8BBF\u95EE",
-        inject: () => ({ rpcCall })
-      },
-      BridgePanel
-    )
-  );
+  let settingsVisible = true;
+  let sectionRegistration = null;
+  const ensureSectionRegistered = () => {
+    if (!settingsVisible || sectionRegistration) return;
+    try {
+      sectionRegistration = ctx.slots.register(
+        {
+          name: "settings.section",
+          id: "dsh-bridge",
+          order: 10,
+          label: () => "\u8FDC\u7A0B\u8BBF\u95EE",
+          inject: () => ({ rpcCall })
+        },
+        BridgePanel
+      );
+    } catch {
+    }
+  };
+  const ensureSectionUnregistered = () => {
+    if (!sectionRegistration) return;
+    try {
+      if (typeof sectionRegistration === "function") {
+        sectionRegistration();
+      } else if (typeof sectionRegistration.dispose === "function") {
+        sectionRegistration.dispose();
+      }
+    } catch {
+    }
+    sectionRegistration = null;
+  };
+  const sectionGate = {
+    visible: () => settingsVisible,
+    setVisible: (visible) => {
+      const next = !!visible;
+      if (settingsVisible === next) return;
+      settingsVisible = next;
+      if (next) {
+        ensureSectionRegistered();
+      } else {
+        ensureSectionUnregistered();
+      }
+    }
+  };
+  ctx.slots.inject("settings.section", () => {
+    if (settingsVisible) {
+      ensureSectionRegistered();
+    }
+  });
+  const bridgeControl = {
+    version: 1,
+    /** 把插件自己的面板交给宿主渲染（返回 React element） */
+    render: (props = {}) => {
+      return React.createElement(BridgePanel, {
+        rpcCall,
+        preferredTab: props.preferredTab,
+        ...props
+      });
+    },
+    /** 宿主收编面板后，撤下设置页那条重复入口 */
+    setSettingsVisible: (visible) => sectionGate.setVisible(visible),
+    settingsVisible: () => sectionGate.visible(),
+    /** 运行时动态特性开关配置 (Issue #52) */
+    configureFeatures: (flags) => setRuntimeFeatureOverrides(flags),
+    getFeatures: () => getRuntimeFeatureOverrides()
+  };
+  if (typeof ctx.provide === "function") {
+    ctx.provide("dsh-bridge", bridgeControl);
+  }
 }
 
     return module.exports;

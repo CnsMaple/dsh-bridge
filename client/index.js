@@ -5,6 +5,14 @@ import {
   fetchLoopbackTokenOnce,
 } from './unlock-manager.js'
 import { hasOfficialDirectoryPicker, shouldYieldToOfficialPicker } from './picker-yield.js'
+import {
+  shouldYieldMobileHeader,
+  shouldYieldMobileStyles,
+  shouldYieldComposerCollapse,
+  setRuntimeFeatureOverrides,
+  getRuntimeFeatureOverrides,
+} from './mobile-yield.js'
+import { registerSettingsNavIcon } from './settings-nav-icon.js'
 // dsh-bridge 客户端插件：设置页「远程访问」面板
 
 // 兼容非 HTTPS 环境（如手机局域网 HTTP 访问）：为非安全上下文补齐 crypto.randomUUID
@@ -3081,10 +3089,13 @@ function TabBar({ active, onChange, dots }) {
 
 // ---- 主面板 ----
 
-function BridgePanel({ rpcCall }) {
+function BridgePanel({ rpcCall, preferredTab }) {
   const [status, setStatus]       = React.useState(null);
   const [err, setErr]             = React.useState(null);
-  const [activeTab, setActiveTab] = React.useState('lan');
+  const [activeTab, setActiveTab] = React.useState(preferredTab || 'lan');
+  React.useEffect(() => {
+    if (preferredTab) setActiveTab(preferredTab);
+  }, [preferredTab]);
   // 平台列表和连接状态
   const [platforms, setPlatforms] = React.useState(null);
   const [selectedPlatform, setSelectedPlatform] = React.useState('wechat');
@@ -3819,6 +3830,7 @@ function BridgePanel({ rpcCall }) {
 
 function injectMobileStyles() {
   if (typeof document === 'undefined') return;
+  if (shouldYieldMobileStyles()) return;
   if (document.getElementById('dsh-bridge-mobile-styles')) return;
 
   const style = document.createElement('style');
@@ -3915,6 +3927,7 @@ function setupSettingsDrilldown() {
 function setupMobileExperience(rpcCall, ctx) {
   if (typeof document === 'undefined' || typeof window === 'undefined') return;
   injectMobileStyles();
+  if (shouldYieldMobileHeader()) return;
 
   // 1. 创建顶部 DeepSeek App 风格导航条 (Header: 左侧双横线，中间当前会话标题，右侧(+))
   let header = document.querySelector('.dsh-mobile-app-header');
@@ -5067,8 +5080,9 @@ function setupIosKeyboardAdapter() {
 // 中间消息可视区很小。折叠后 composer 隐藏、消息 viewArea 自动伸展全高，阅读区显著增大。
 // 折叠态记忆到 localStorage（dsh-composer-fold），跨会话保持用户偏好。
 function setupComposerCollapse() {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  if (typeof window === 'undefined' || typeof document === 'undefined' || typeof MutationObserver === 'undefined') return;
   if (window.innerWidth > MOBILE_MAX_WIDTH) return; // 仅移动端
+  if (shouldYieldComposerCollapse()) return;
   const LS_KEY = 'dsh-composer-fold';
 
   let bar = null;          // 折叠态底部"点击输入"细条
@@ -5197,6 +5211,12 @@ function apply(ctx) {
   // 放在最前：交互层先就绪，后续任何初始化抛异常都不会留下「CSS 生效但监听器缺失」
   // 的状态（CSS 6.2 块另有 <html> 就绪开关双重兜底）。
   setupSettingsDrilldown();
+  // 设置页左侧导航栏图标定制：将原生通用齿轮替换为远程访问专属图标
+  if (typeof ctx.effect === 'function') {
+    ctx.effect(() => registerSettingsNavIcon(() => '远程访问'), 'dsh-bridge: settings nav icon');
+  } else {
+    registerSettingsNavIcon(() => '远程访问');
+  }
   const rpcCall = (endpoint, payload, signal) =>
     ctx.connection.rpc.call(BRIDGE_RPC_CHANNEL, endpoint, payload, signal);
 
@@ -5245,18 +5265,80 @@ function apply(ctx) {
     }),
   );
 
-  ctx.slots.inject('settings.section', () =>
-    ctx.slots.register(
-      {
-        name: 'settings.section',
-        id: 'dsh-bridge',
-        order: 10,
-        label: () => '远程访问',
-        inject: () => ({ rpcCall }),
-      },
-      BridgePanel,
-    ),
-  );
+  // 设置页条目动态门控与可见性管理 (Issue #51)
+  let settingsVisible = true;
+  let sectionRegistration = null;
+
+  const ensureSectionRegistered = () => {
+    if (!settingsVisible || sectionRegistration) return;
+    try {
+      sectionRegistration = ctx.slots.register(
+        {
+          name: 'settings.section',
+          id: 'dsh-bridge',
+          order: 10,
+          label: () => '远程访问',
+          inject: () => ({ rpcCall }),
+        },
+        BridgePanel,
+      );
+    } catch {}
+  };
+
+  const ensureSectionUnregistered = () => {
+    if (!sectionRegistration) return;
+    try {
+      if (typeof sectionRegistration === 'function') {
+        sectionRegistration();
+      } else if (typeof sectionRegistration.dispose === 'function') {
+        sectionRegistration.dispose();
+      }
+    } catch {}
+    sectionRegistration = null;
+  };
+
+  const sectionGate = {
+    visible: () => settingsVisible,
+    setVisible: (visible) => {
+      const next = !!visible;
+      if (settingsVisible === next) return;
+      settingsVisible = next;
+      if (next) {
+        ensureSectionRegistered();
+      } else {
+        ensureSectionUnregistered();
+      }
+    },
+  };
+
+  ctx.slots.inject('settings.section', () => {
+    if (settingsVisible) {
+      ensureSectionRegistered();
+    }
+  });
+
+  // 暴露客户端反射控制面 (Issue #51)
+  const bridgeControl = {
+    version: 1,
+    /** 把插件自己的面板交给宿主渲染（返回 React element） */
+    render: (props = {}) => {
+      return React.createElement(BridgePanel, {
+        rpcCall,
+        preferredTab: props.preferredTab,
+        ...props,
+      });
+    },
+    /** 宿主收编面板后，撤下设置页那条重复入口 */
+    setSettingsVisible: (visible) => sectionGate.setVisible(visible),
+    settingsVisible: () => sectionGate.visible(),
+    /** 运行时动态特性开关配置 (Issue #52) */
+    configureFeatures: (flags) => setRuntimeFeatureOverrides(flags),
+    getFeatures: () => getRuntimeFeatureOverrides(),
+  };
+
+  if (typeof ctx.provide === 'function') {
+    ctx.provide('dsh-bridge', bridgeControl);
+  }
 }
 
 export { name, inject, apply };
