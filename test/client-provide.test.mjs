@@ -178,4 +178,61 @@ test('client/client.js 打包产物必须同步包含宿主控制面', () => {
   assert.match(unescapedBundle, /dsh-bridge/);
   assert.match(unescapedBundle, /preferredTab/);
   assert.match(unescapedBundle, /setSettingsVisible/);
+  // 宿主按钮文案匹配（中英双语）也必须随产物发布：只改源码不 build 会让线上
+  // 仍只匹配中文、英文界面下侧边栏空白（与第 6 节的源码断言配套）。
+  assert.match(unescapedBundle, /Open sidebar/, '产物缺少展开侧边栏英文匹配，请运行 npm run build:client');
+  assert.match(unescapedBundle, /Collapse sidebar/, '产物缺少收起侧边栏英文匹配，请运行 npm run build:client');
+  assert.match(unescapedBundle, /Session actions/, '产物缺少会话操作英文匹配，请运行 npm run build:client');
+});
+
+// ---------- 6. 宿主按钮文案匹配（中英双语，见 PR #48 后侧边栏空白回归） ----------
+//
+// 宿主按钮 aria-label 随界面语言切换：中文「打开侧边栏 / 收起侧边栏 / 操作 / 新建会话」，
+// 英文 "Open sidebar / Collapse sidebar / Session actions / New session"（0.1.7 起按浏览器语言渲染）。
+// 只按中文匹配会在英文界面下漏取宿主按钮：抽屉滑出但会话列表不挂载 → 侧边栏空白。
+// 下面是全部宿主按钮匹配点；展开/收起/操作三类用 `[\s\S]*` 跨子句核对中英成对，
+// 其余（收起面板 Collapse、工作区 workspace、Add/Open workspace、新建会话 New session）
+// 以精确子串分别断言。产物同步断言（第 5 节）同样覆盖这些英文变体。
+
+test('宿主侧边栏展开按钮必须同时匹配中英文文案', () => {
+  assert.match(
+    indexSource,
+    /button\[aria-label\*="打开侧边栏"\][\s\S]*button\[aria-label\*="Open sidebar"\]/,
+    '抽屉展开逻辑必须同时匹配中文「打开侧边栏」与宿主英文 "Open sidebar"（缺英文会在英文界面漏取 → 侧边栏空白）',
+  );
+  assert.match(
+    indexSource,
+    /button\[aria-label\*="收起侧边栏"\][\s\S]*button\[aria-label\*="Collapse sidebar"\]/,
+    '点击宿主收起图标收抽屉逻辑必须同时匹配中英文收起文案',
+  );
+  assert.match(
+    indexSource,
+    /button\[aria-label\*="操作"\][\s\S]*button\[aria-label\*="Session actions"\]/,
+    '长按会话呼出操作菜单必须同时匹配中英文操作按钮文案',
+  );
+  assert.match(
+    indexSource,
+    /button\[class\*="toggleButton"\]\[aria-label\*="收起"\]/,
+    '收起面板按钮必须保留中文「收起」匹配（与英文 Collapse 配对，见下一条）',
+  );
+  assert.match(
+    indexSource,
+    /button\[class\*="toggleButton"\]\[aria-label\*="Collapse"\]/,
+    '收起面板按钮必须同时匹配英文 "Collapse"',
+  );
+  assert.match(
+    indexSource,
+    /button\[aria-label\*="工作区"\][\s\S]*button\[aria-label\*="workspace"\]/,
+    '工作区触发按钮必须同时匹配中文「工作区」与英文小写 workspace（"Add workspace"/"Choose workspace"）',
+  );
+  assert.match(
+    indexSource,
+    /button\[aria-label\*="Add workspace"\]/,
+    '打开工作区拦截必须匹配英文 "Add workspace"',
+  );
+  assert.match(
+    indexSource,
+    /button\[aria-label="新建会话"\][\s\S]*button\[aria-label="New session"\]/,
+    '新建会话按钮必须同时匹配中文「新建会话」与英文 "New session"（否则英文界面 (+) 失效）',
+  );
 });

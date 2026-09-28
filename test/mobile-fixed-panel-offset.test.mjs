@@ -82,6 +82,14 @@ test('fixed 全屏面板在移动端块内单独让位 header 高度', () => {
   const body = ruleBody(mobile, '[data-sidebar-right-panel="fullscreen"]');
   assert.ok(body, '移动端块内应有 [data-sidebar-right-panel="fullscreen"] 让位规则');
 
+  // 0.1.7 宿主把面板从 fixed 改为 absolute（相对 rightbarCol），若插件只改 top 会在
+  // 宿主定位之上二次叠加 52px → 面板被推到视口外（点开右侧栏按钮消失、面板不出来）。
+  // 修法：统一强制 fixed 相对视口 + top 让位，0.1.5 与 0.1.7 行为一致。
+  assert.match(
+    body,
+    /[;{\s]position:\s*fixed\s*!important/,
+    '面板必须强制为 fixed（相对视口），否则 0.1.7 的 absolute 会叠加二次偏移',
+  );
   assert.match(
     body,
     /[;{\s]top:\s*var\(--dsh-mobile-header-h,\s*52px\)\s*!important/,
@@ -151,6 +159,30 @@ test('frame 规则限定在布局外壳，不命中聊天记录容器（否则�
   // 该块内不得给聊天记录容器设高度/溢出（官方规则是 flex:none;height:auto，由外层滚动）
   const chatFrame = ruleBody(mobile, 'div[class*="EvIC1a_frame"]');
   assert.equal(chatFrame, null, '移动端规则不得命中聊天记录容器 .EvIC1a_frame');
+});
+
+test('frame 恢复宿主 grid 三列并显式归位（0.1.7 右侧栏布局）', () => {
+  const mobile = mediaBlock(structureCss, '(max-width: 767px)');
+  assert.ok(mobile, '移动端媒体查询块缺失');
+
+  // 0.1.7 宿主 frame 是 display:grid 三列，插件若强制 flex column + 单列 grid 会挤塌
+  // rightbarCol（面板 absolute 相对它 → 定位到视口外，右侧栏不出来）。
+  const frame = ruleBody(mobile, '[data-slot="root"] > div[class*="_frame"]');
+  assert.match(frame, /display:\s*grid\s*!important/, 'frame 必须保持宿主 grid 布局');
+  assert.match(
+    frame,
+    /grid-template-columns:\s*0px\s+minmax\(0px,\s*1fr\)\s+minmax\(0px,\s*0px\)\s*!important/,
+    'frame 列应为「0 | 1fr | 0」：左侧抽屉 fixed 不占列、center 占满、rightbar 折叠列留位',
+  );
+
+  // 左侧栏抽屉化（fixed 脱离 grid 流）后，center/rightbar/overlay 必须显式归位列，
+  // 否则 centerCol 会被自动排进第 1 列（56px 轨道）、rightbarCol 塌陷到视口底部。
+  const center = ruleBody(mobile, 'div[class*="_centerCol"]');
+  assert.match(center, /grid-column:\s*2\s*!important/, 'centerCol 必须归位到第 2 列（1fr 占满）');
+  const rightbar = ruleBody(mobile, 'div[class*="_rightbarCol"]');
+  assert.match(rightbar, /grid-column:\s*3\s*!important/, 'rightbarCol 必须归位到第 3 列');
+  const overlay = ruleBody(mobile, 'div[class*="_overlayLayer"]');
+  assert.match(overlay, /grid-column:\s*1\s*\/\s*-1\s*!important/, 'overlayLayer 必须横跨全部列');
 });
 
 test('运行时断点常量与 CSS 一致，且不再散落魔法值', () => {

@@ -3950,7 +3950,12 @@ function setupMobileExperience(rpcCall, ctx) {
       e.stopPropagation();
       const isOpen = document.body.classList.toggle('dsh-drawer-open');
       if (isOpen) {
-        const expand = document.querySelector('button[aria-label*="打开侧边栏"], button[title*="打开侧边栏"]');
+        // 匹配宿主「展开侧边栏」按钮。宿主文案随界面语言切换：中文「打开侧边栏」、
+        // 英文 "Open sidebar"（0.1.7 起宿主按浏览器语言渲染 en，只匹配中文会漏取，
+        // 导致抽屉滑出但会话列表未挂载 → 侧边栏空白）。
+        const expand = document.querySelector(
+          'button[aria-label*="打开侧边栏"], button[title*="打开侧边栏"], button[aria-label*="Open sidebar"], button[title*="Open sidebar"]',
+        );
         if (expand) expand.click();
       }
     };
@@ -3978,7 +3983,8 @@ function setupMobileExperience(rpcCall, ctx) {
     rightBtn.onclick = () => {
       const openPanels = document.querySelectorAll('div[class*="nArs4W_panel"]:not([class*="panelHidden"]), div[class*="workbench_panel"]:not([class*="panelHidden"])');
       openPanels.forEach((p) => p.classList.add('nArs4W_panelHidden'));
-      const dshNewBtn = document.querySelector('button[aria-label="新建会话"]');
+      // 宿主新建会话按钮文案随语言切换：中文「新建会话」/ 英文 "New session"（两者都要匹配，否则英文界面下 (+) 失效）
+      const dshNewBtn = document.querySelector('button[aria-label="新建会话"], button[aria-label="New session"]');
       if (dshNewBtn) dshNewBtn.click();
     };
 
@@ -4038,7 +4044,7 @@ function setupMobileExperience(rpcCall, ctx) {
           e.stopPropagation();
           document.body.classList.remove('dsh-workbench-open');
           p.classList.add('nArs4W_panelHidden');
-          const collapseBtn = document.querySelector('button[class*="toggleButton"][aria-label*="收起"]');
+          const collapseBtn = document.querySelector('button[class*="toggleButton"][aria-label*="收起"], button[class*="toggleButton"][aria-label*="Collapse"]');
           if (collapseBtn) collapseBtn.click();
         };
         bar.appendChild(btn);
@@ -4051,18 +4057,22 @@ function setupMobileExperience(rpcCall, ctx) {
   window.addEventListener('resize', ensurePanelCloseButton);
 
   // 移动端点击面板/工作区触发按钮时，自动激活 dsh-workbench-open
+  // （宿主文案随语言切换：中文「面板/工作区」/ 英文 "Panel/workspace" —— 注意英文实际是
+  // 小写 "Add workspace"、"Choose workspace" 与大写 "Workspace actions for …"，两者都要覆盖；
+  // CSS 属性子串匹配区分大小写，不能只写一种）
   document.addEventListener('click', (e) => {
     if (typeof window === 'undefined' || window.innerWidth > MOBILE_MAX_WIDTH) return;
-    const trigger = e.target.closest('button[aria-label*="面板"], button[aria-label*="工作区"], div[class*="toggleCluster"] button, button[class*="subagent"], div[class*="headerActions"] button, div[class*="titleRow"] button');
+    const trigger = e.target.closest('button[aria-label*="面板"], button[aria-label*="工作区"], button[aria-label*="workspace"], button[aria-label*="Workspace"], div[class*="toggleCluster"] button, button[class*="subagent"], div[class*="headerActions"] button, div[class*="titleRow"] button');
     if (trigger && !trigger.classList.contains('dsh-mobile-panel-close-btn') && !trigger.classList.contains('dsh-header-menu-btn') && !trigger.classList.contains('dsh-header-new-btn')) {
       document.body.classList.add('dsh-workbench-open');
     }
   }, true);
 
   // 移动端点击 DSH 自带的收起侧边栏图标时，自动收起抽屉
+  // （文案随宿主界面语言切换：中文「收起侧边栏」/ 英文 "Collapse sidebar"，两者都要匹配）
   document.addEventListener('click', (e) => {
     if (typeof window === 'undefined' || window.innerWidth > MOBILE_MAX_WIDTH) return;
-    const toggle = e.target.closest('button[aria-label*="收起侧边栏"], button[title*="收起侧边栏"]');
+    const toggle = e.target.closest('button[aria-label*="收起侧边栏"], button[title*="收起侧边栏"], button[aria-label*="Collapse sidebar"], button[title*="Collapse sidebar"]');
     if (toggle) {
       document.body.classList.remove('dsh-drawer-open');
     }
@@ -4170,8 +4180,8 @@ function setupMobileExperience(rpcCall, ctx) {
         if (navigator.vibrate) navigator.vibrate(40);
       } catch (_) {}
 
-      // 寻找该会话项内的三点操作按钮并触发点击
-      const actionBtn = sessionRow.querySelector('button[aria-label*="操作"], button[class*="iconButton"], button');
+      // 寻找该会话项内的三点操作按钮并触发点击（宿主文案：中文「操作」/ 英文 "Session actions"）
+      const actionBtn = sessionRow.querySelector('button[aria-label*="操作"], button[aria-label*="Session actions"], button[class*="iconButton"], button');
       if (actionBtn) {
         actionBtn.click();
       }
@@ -4202,7 +4212,9 @@ function setupMobileExperience(rpcCall, ctx) {
     if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
       if (deltaX > 0 && touchStartX <= 35) {
         document.body.classList.add('dsh-drawer-open');
-        const collapsedToggle = document.querySelector('div[class*="hHd-Xa_collapsed"] button[class*="hHd-Xa_toggle"]');
+        const collapsedToggle = document.querySelector(
+          'div[class*="hHd-Xa_collapsed"] button[class*="hHd-Xa_toggle"], button[aria-label*="打开侧边栏"], button[title*="打开侧边栏"], button[aria-label*="Open sidebar"], button[title*="Open sidebar"]',
+        );
         if (collapsedToggle) collapsedToggle.click();
       } else if (deltaX < 0 && document.body.classList.contains('dsh-drawer-open')) {
         document.body.classList.remove('dsh-drawer-open');
@@ -4234,7 +4246,7 @@ function setupMobileExperience(rpcCall, ctx) {
       label.includes('添加工作区') ||
       label.includes('打开工作区') ||
       label.includes('打开文件夹') ||
-      btn.matches('button[aria-label*="工作区"][aria-label*="添加"], button[aria-label*="工作区"][aria-label*="打开"]')
+      btn.matches('button[aria-label*="工作区"][aria-label*="添加"], button[aria-label*="工作区"][aria-label*="打开"], button[aria-label*="Workspace"][aria-label*="add"], button[aria-label*="Workspace"][aria-label*="open"], button[aria-label*="Add workspace"], button[aria-label*="Open workspace"]')
     );
 
     if (isAddWorkspace) {

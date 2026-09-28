@@ -120,29 +120,49 @@ var MOBILE_STYLES_CSS = `
          \u8868\u73B0\u4E3A\u300C\u770B\u4E0D\u5230\u6700\u65B0\u6D88\u606F\u300D\u3002\u5B98\u65B9\u7ED9\u8BE5\u5BB9\u5668\u7684\u89C4\u5219\u662F flex:none;height:auto
          \uFF08\u8BA9\u8BB0\u5F55\u968F\u5185\u5BB9\u81EA\u7136\u589E\u9AD8\u3001\u7531\u5916\u5C42\u7EDF\u4E00\u6EDA\u52A8\uFF09\uFF0C\u4E0E\u8FD9\u91CC\u51B2\u7A81\uFF0C\u6545\u5FC5\u987B\u6392\u9664\u3002 */
       [data-slot="root"] > div[class*="_frame"] {
-        display: flex !important;
-        flex-direction: column !important;
+        display: grid !important;
+        grid-template-columns: 0px minmax(0px, 1fr) minmax(0px, 0px) !important;
+        grid-template-rows: minmax(0, 100%) !important;
         width: 100vw !important;
         height: 100dvh !important;
         margin: 0 !important;
         padding-top: var(--dsh-mobile-header-h) !important;
         position: relative !important;
-        grid-template-columns: 1fr !important;
         overflow: hidden !important;
         box-sizing: border-box !important;
       }
 
+      /* \u5BBF\u4E3B 0.1.7 \u7684 frame \u662F grid \u4E09\u5217\u5E03\u5C40\uFF08sidebar | center | rightbar\uFF09\uFF0CJS \u6309\u72B6\u6001\u6CE8\u5165
+         grid-template-columns\uFF1B\u63D2\u4EF6\u628A\u5DE6\u4FA7\u680F\u62BD\u5C49\u5316\u540E sidebarCol \u53D8\u6210 fixed\uFF08\u8131\u79BB grid \u6D41\uFF09\uFF0C
+         \u82E5\u4E0D\u663E\u5F0F\u6307\u5B9A\u5217\u4F4D\uFF0CcenterCol \u4F1A\u88AB\u81EA\u52A8\u6392\u8FDB\u7B2C 1 \u5217\uFF0856px \u8F68\u9053\uFF09\u3001rightbarCol \u584C\u9677\u5230
+         \u89C6\u53E3\u5E95\u90E8 \u2192 \u53F3\u4FA7\u680F\u70B9\u5F00\u540E\u9762\u677F\u88AB\u5B9A\u4F4D\u5230\u89C6\u53E3\u5916\uFF08\u7528\u6237\u770B\u5230\u7684\u300C\u6309\u94AE\u6D88\u5931\u3001\u53F3\u4FA7\u680F\u6CA1\u51FA\u6765\u300D\uFF09\u3002
+         \u8FD9\u91CC\u663E\u5F0F\u5F52\u4F4D\uFF1Asidebar \u62BD\u5C49\u4E0D\u5360\u5217\uFF08\u7B2C 1 \u5217 0px\uFF09\u3001center \u5360\u6EE1\uFF08\u7B2C 2 \u5217 1fr\uFF09\u3001
+         rightbar \u4FDD\u7559\u5BBF\u4E3B\u53F3\u4FA7\u680F\u5217\uFF08\u7B2C 3 \u5217 0px \u6298\u53E0\uFF0C\u5168\u5C4F\u9762\u677F fixed \u76F8\u5BF9\u89C6\u53E3\u3001\u4E0D\u4F9D\u8D56\u6B64\u5217\uFF09\u3002 */
+      div[class*="_centerCol"] { grid-column: 2 !important; }
+      div[class*="_rightbarCol"] { grid-column: 3 !important; }
+      div[class*="_overlayLayer"] { grid-column: 1 / -1 !important; }
+
       /* 1.1 fixed \u5168\u5C4F\u9762\u677F\u5355\u72EC\u8BA9\u4F4D\uFF1Aposition:fixed \u7684\u5305\u542B\u5757\u662F viewport\uFF08CSS 2.1 \xA710.1\uFF09\uFF0C
          \u4E0D\u8DDF\u968F\u4E0A\u9762 frame \u7684 padding-top\uFF0C\u56E0\u6B64\u9876\u90E8 52px \u4F1A\u843D\u8FDB\u9876\u680F\u8986\u76D6\u533A\uFF08#41\uFF09\u3002
-         \u5B98\u65B9\u53F3\u4FA7\u680F\u5728 <768px \u81EA\u52A8\u5168\u5C4F\uFF08fixed; inset:0; z-index:40\uFF09\uFF0C\u8FD9\u91CC\u6309 data \u5C5E\u6027
-         \u76F4\u63A5\u4F4D\u79FB\u5BB9\u5668\u672C\u8EAB\uFF0C\u4E0D\u4F9D\u8D56\u5BBF\u4E3B CSS-module \u54C8\u5E0C\u7C7B\u540D\u3002
-         \u771F\u6B63\u8D77\u4F5C\u7528\u7684\u662F top\uFF1Bheight/max-height \u4E0E\u4E0B\u9762\u5DE5\u4F5C\u53F0\u9762\u677F\u90A3\u6BB5\u4FDD\u6301\u540C\u4E00\u5199\u6CD5\uFF1A
-         \u5BBF\u4E3B\u5F53\u524D\u7528 inset:0\uFF08\u65E0\u663E\u5F0F\u9AD8\u5EA6\uFF09\u65F6 top \u5355\u72EC\u5373\u53EF\uFF0C\u4F46\u5BBF\u4E3B\u5C06\u6765\u82E5\u7ED9\u51FA\u663E\u5F0F\u9AD8\u5EA6\uFF0C
-         \u663E\u5F0F height \u4ECD\u80FD\u628A\u76D2\u5B50\u6536\u5728\u9876\u680F\u4E4B\u4E0B\u3002 */
+         \u5B98\u65B9\u53F3\u4FA7\u680F\u5728 <768px \u81EA\u52A8\u5168\u5C4F\uFF0C\u8FD9\u91CC\u6309 data \u5C5E\u6027\u76F4\u63A5\u4F4D\u79FB\u5BB9\u5668\u672C\u8EAB\uFF0C\u4E0D\u4F9D\u8D56\u5BBF\u4E3B
+         CSS-module \u54C8\u5E0C\u7C7B\u540D\u3002
+         \u5BBF\u4E3B\u7248\u672C\u5DEE\u5F02\uFF080.1.5 vs 0.1.7\uFF09\uFF1A0.1.5 \u7684\u9762\u677F\u81EA\u8EAB\u5C31\u662F position:fixed; inset:0
+         \uFF08\u76F8\u5BF9\u89C6\u53E3\uFF09\uFF0Ctop \u8BA9\u4F4D\u76F4\u63A5\u751F\u6548\uFF1B0.1.7 \u628A\u9762\u677F\u6539\u6210 position:absolute \u76F8\u5BF9
+         rightbarCol \u5217\u5B9A\u4F4D\uFF0C\u4E14\u5BBF\u4E3B\u5DF2\u628A\u5B83\u653E\u5728\u5185\u5BB9\u533A\u8D77\u70B9\u2014\u2014\u82E5\u63D2\u4EF6\u4ECD\u53EA\u6539 top\uFF0C\u4F1A\u5728\u5BBF\u4E3B
+         \u5B9A\u4F4D\u4E4B\u4E0A\u518D\u53E0\u52A0 52px\uFF08\u9762\u677F\u88AB\u63A8\u5230\u89C6\u53E3\u5916\uFF0C\u8868\u73B0\u4E3A\u300C\u70B9\u5F00\u53F3\u4FA7\u680F\u6309\u94AE\u6D88\u5931\u3001\u9762\u677F\u4E0D
+         \u51FA\u6765\u300D\uFF09\u3002\u4FEE\u6CD5\uFF1A\u628A\u9762\u677F\u7EDF\u4E00\u5F3A\u5236\u4E3A fixed \u76F8\u5BF9\u89C6\u53E3 + top:52px \u8BA9\u4F4D\uFF0C\u4E24\u7248\u5BBF\u4E3B
+         \u884C\u4E3A\u4E00\u81F4\u3002 */
       [data-sidebar-right-panel="fullscreen"] {
+        position: fixed !important;
         top: var(--dsh-mobile-header-h, 52px) !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
         height: calc(100dvh - var(--dsh-mobile-header-h, 52px)) !important;
         max-height: calc(100dvh - var(--dsh-mobile-header-h, 52px)) !important;
+        z-index: 40 !important;
+        box-sizing: border-box !important;
       }
 
       /* 2. \u9876\u90E8\u539F\u751F\u5BFC\u822A\u6761\uFF1A100% \u8FD8\u539F DeepSeek App (\u5DE6\u4FA7\u53CC\u6A2A\u7EBF\uFF0C\u53F3\u4FA7(+)\uFF0C\u4E2D\u95F4\u7559\u767D\uFF0C\u65E0\u591A\u4F59\u8BBE\u7F6E\u6309\u94AE) */
@@ -5900,7 +5920,9 @@ function setupMobileExperience(rpcCall, ctx) {
       e.stopPropagation();
       const isOpen = document.body.classList.toggle("dsh-drawer-open");
       if (isOpen) {
-        const expand = document.querySelector('button[aria-label*="\u6253\u5F00\u4FA7\u8FB9\u680F"], button[title*="\u6253\u5F00\u4FA7\u8FB9\u680F"]');
+        const expand = document.querySelector(
+          'button[aria-label*="\u6253\u5F00\u4FA7\u8FB9\u680F"], button[title*="\u6253\u5F00\u4FA7\u8FB9\u680F"], button[aria-label*="Open sidebar"], button[title*="Open sidebar"]'
+        );
         if (expand) expand.click();
       }
     };
@@ -5924,7 +5946,7 @@ function setupMobileExperience(rpcCall, ctx) {
     rightBtn.onclick = () => {
       const openPanels = document.querySelectorAll('div[class*="nArs4W_panel"]:not([class*="panelHidden"]), div[class*="workbench_panel"]:not([class*="panelHidden"])');
       openPanels.forEach((p) => p.classList.add("nArs4W_panelHidden"));
-      const dshNewBtn = document.querySelector('button[aria-label="\u65B0\u5EFA\u4F1A\u8BDD"]');
+      const dshNewBtn = document.querySelector('button[aria-label="\u65B0\u5EFA\u4F1A\u8BDD"], button[aria-label="New session"]');
       if (dshNewBtn) dshNewBtn.click();
     };
     header.appendChild(leftBtn);
@@ -5977,7 +5999,7 @@ function setupMobileExperience(rpcCall, ctx) {
           e.stopPropagation();
           document.body.classList.remove("dsh-workbench-open");
           p.classList.add("nArs4W_panelHidden");
-          const collapseBtn = document.querySelector('button[class*="toggleButton"][aria-label*="\u6536\u8D77"]');
+          const collapseBtn = document.querySelector('button[class*="toggleButton"][aria-label*="\u6536\u8D77"], button[class*="toggleButton"][aria-label*="Collapse"]');
           if (collapseBtn) collapseBtn.click();
         };
         bar.appendChild(btn);
@@ -5989,14 +6011,14 @@ function setupMobileExperience(rpcCall, ctx) {
   window.addEventListener("resize", ensurePanelCloseButton);
   document.addEventListener("click", (e) => {
     if (typeof window === "undefined" || window.innerWidth > MOBILE_MAX_WIDTH) return;
-    const trigger = e.target.closest('button[aria-label*="\u9762\u677F"], button[aria-label*="\u5DE5\u4F5C\u533A"], div[class*="toggleCluster"] button, button[class*="subagent"], div[class*="headerActions"] button, div[class*="titleRow"] button');
+    const trigger = e.target.closest('button[aria-label*="\u9762\u677F"], button[aria-label*="\u5DE5\u4F5C\u533A"], button[aria-label*="workspace"], button[aria-label*="Workspace"], div[class*="toggleCluster"] button, button[class*="subagent"], div[class*="headerActions"] button, div[class*="titleRow"] button');
     if (trigger && !trigger.classList.contains("dsh-mobile-panel-close-btn") && !trigger.classList.contains("dsh-header-menu-btn") && !trigger.classList.contains("dsh-header-new-btn")) {
       document.body.classList.add("dsh-workbench-open");
     }
   }, true);
   document.addEventListener("click", (e) => {
     if (typeof window === "undefined" || window.innerWidth > MOBILE_MAX_WIDTH) return;
-    const toggle = e.target.closest('button[aria-label*="\u6536\u8D77\u4FA7\u8FB9\u680F"], button[title*="\u6536\u8D77\u4FA7\u8FB9\u680F"]');
+    const toggle = e.target.closest('button[aria-label*="\u6536\u8D77\u4FA7\u8FB9\u680F"], button[title*="\u6536\u8D77\u4FA7\u8FB9\u680F"], button[aria-label*="Collapse sidebar"], button[title*="Collapse sidebar"]');
     if (toggle) {
       document.body.classList.remove("dsh-drawer-open");
     }
@@ -6068,7 +6090,7 @@ function setupMobileExperience(rpcCall, ctx) {
         if (navigator.vibrate) navigator.vibrate(40);
       } catch (_) {
       }
-      const actionBtn = sessionRow.querySelector('button[aria-label*="\u64CD\u4F5C"], button[class*="iconButton"], button');
+      const actionBtn = sessionRow.querySelector('button[aria-label*="\u64CD\u4F5C"], button[aria-label*="Session actions"], button[class*="iconButton"], button');
       if (actionBtn) {
         actionBtn.click();
       }
@@ -6095,7 +6117,9 @@ function setupMobileExperience(rpcCall, ctx) {
     if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
       if (deltaX > 0 && touchStartX <= 35) {
         document.body.classList.add("dsh-drawer-open");
-        const collapsedToggle = document.querySelector('div[class*="hHd-Xa_collapsed"] button[class*="hHd-Xa_toggle"]');
+        const collapsedToggle = document.querySelector(
+          'div[class*="hHd-Xa_collapsed"] button[class*="hHd-Xa_toggle"], button[aria-label*="\u6253\u5F00\u4FA7\u8FB9\u680F"], button[title*="\u6253\u5F00\u4FA7\u8FB9\u680F"], button[aria-label*="Open sidebar"], button[title*="Open sidebar"]'
+        );
         if (collapsedToggle) collapsedToggle.click();
       } else if (deltaX < 0 && document.body.classList.contains("dsh-drawer-open")) {
         document.body.classList.remove("dsh-drawer-open");
@@ -6108,7 +6132,7 @@ function setupMobileExperience(rpcCall, ctx) {
     if (!btn) return;
     if (btn.closest("#dsh-remote-workspace-modal")) return;
     const label = (btn.getAttribute("aria-label") || btn.innerText || btn.title || "").trim();
-    const isAddWorkspace = label === "\u6DFB\u52A0\u5DE5\u4F5C\u533A" || label === "\u65B0\u5EFA\u5DE5\u4F5C\u533A" || label === "\u6253\u5F00\u5DE5\u4F5C\u533A" || label === "\u6253\u5F00\u6587\u4EF6\u5939" || label === "Add Workspace" || label === "Open Folder" || label.includes("\u6DFB\u52A0\u5DE5\u4F5C\u533A") || label.includes("\u6253\u5F00\u5DE5\u4F5C\u533A") || label.includes("\u6253\u5F00\u6587\u4EF6\u5939") || btn.matches('button[aria-label*="\u5DE5\u4F5C\u533A"][aria-label*="\u6DFB\u52A0"], button[aria-label*="\u5DE5\u4F5C\u533A"][aria-label*="\u6253\u5F00"]');
+    const isAddWorkspace = label === "\u6DFB\u52A0\u5DE5\u4F5C\u533A" || label === "\u65B0\u5EFA\u5DE5\u4F5C\u533A" || label === "\u6253\u5F00\u5DE5\u4F5C\u533A" || label === "\u6253\u5F00\u6587\u4EF6\u5939" || label === "Add Workspace" || label === "Open Folder" || label.includes("\u6DFB\u52A0\u5DE5\u4F5C\u533A") || label.includes("\u6253\u5F00\u5DE5\u4F5C\u533A") || label.includes("\u6253\u5F00\u6587\u4EF6\u5939") || btn.matches('button[aria-label*="\u5DE5\u4F5C\u533A"][aria-label*="\u6DFB\u52A0"], button[aria-label*="\u5DE5\u4F5C\u533A"][aria-label*="\u6253\u5F00"], button[aria-label*="Workspace"][aria-label*="add"], button[aria-label*="Workspace"][aria-label*="open"], button[aria-label*="Add workspace"], button[aria-label*="Open workspace"]');
     if (isAddWorkspace) {
       e.preventDefault();
       e.stopPropagation();

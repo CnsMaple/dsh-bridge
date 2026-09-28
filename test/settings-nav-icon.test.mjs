@@ -6,7 +6,6 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   SETTINGS_NAV_MARKER,
-  REMOTE_NAV_SVG,
   getNavIconCss,
   registerSettingsNavIcon,
 } from '../client/settings-nav-icon.js';

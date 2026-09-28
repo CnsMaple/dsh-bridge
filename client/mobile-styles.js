@@ -89,29 +89,49 @@ export const MOBILE_STYLES_CSS = `
          表现为「看不到最新消息」。官方给该容器的规则是 flex:none;height:auto
          （让记录随内容自然增高、由外层统一滚动），与这里冲突，故必须排除。 */
       [data-slot="root"] > div[class*="_frame"] {
-        display: flex !important;
-        flex-direction: column !important;
+        display: grid !important;
+        grid-template-columns: 0px minmax(0px, 1fr) minmax(0px, 0px) !important;
+        grid-template-rows: minmax(0, 100%) !important;
         width: 100vw !important;
         height: 100dvh !important;
         margin: 0 !important;
         padding-top: var(--dsh-mobile-header-h) !important;
         position: relative !important;
-        grid-template-columns: 1fr !important;
         overflow: hidden !important;
         box-sizing: border-box !important;
       }
 
+      /* 宿主 0.1.7 的 frame 是 grid 三列布局（sidebar | center | rightbar），JS 按状态注入
+         grid-template-columns；插件把左侧栏抽屉化后 sidebarCol 变成 fixed（脱离 grid 流），
+         若不显式指定列位，centerCol 会被自动排进第 1 列（56px 轨道）、rightbarCol 塌陷到
+         视口底部 → 右侧栏点开后面板被定位到视口外（用户看到的「按钮消失、右侧栏没出来」）。
+         这里显式归位：sidebar 抽屉不占列（第 1 列 0px）、center 占满（第 2 列 1fr）、
+         rightbar 保留宿主右侧栏列（第 3 列 0px 折叠，全屏面板 fixed 相对视口、不依赖此列）。 */
+      div[class*="_centerCol"] { grid-column: 2 !important; }
+      div[class*="_rightbarCol"] { grid-column: 3 !important; }
+      div[class*="_overlayLayer"] { grid-column: 1 / -1 !important; }
+
       /* 1.1 fixed 全屏面板单独让位：position:fixed 的包含块是 viewport（CSS 2.1 §10.1），
          不跟随上面 frame 的 padding-top，因此顶部 52px 会落进顶栏覆盖区（#41）。
-         官方右侧栏在 <768px 自动全屏（fixed; inset:0; z-index:40），这里按 data 属性
-         直接位移容器本身，不依赖宿主 CSS-module 哈希类名。
-         真正起作用的是 top；height/max-height 与下面工作台面板那段保持同一写法：
-         宿主当前用 inset:0（无显式高度）时 top 单独即可，但宿主将来若给出显式高度，
-         显式 height 仍能把盒子收在顶栏之下。 */
+         官方右侧栏在 <768px 自动全屏，这里按 data 属性直接位移容器本身，不依赖宿主
+         CSS-module 哈希类名。
+         宿主版本差异（0.1.5 vs 0.1.7）：0.1.5 的面板自身就是 position:fixed; inset:0
+         （相对视口），top 让位直接生效；0.1.7 把面板改成 position:absolute 相对
+         rightbarCol 列定位，且宿主已把它放在内容区起点——若插件仍只改 top，会在宿主
+         定位之上再叠加 52px（面板被推到视口外，表现为「点开右侧栏按钮消失、面板不
+         出来」）。修法：把面板统一强制为 fixed 相对视口 + top:52px 让位，两版宿主
+         行为一致。 */
       [data-sidebar-right-panel="fullscreen"] {
+        position: fixed !important;
         top: var(--dsh-mobile-header-h, 52px) !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
         height: calc(100dvh - var(--dsh-mobile-header-h, 52px)) !important;
         max-height: calc(100dvh - var(--dsh-mobile-header-h, 52px)) !important;
+        z-index: 40 !important;
+        box-sizing: border-box !important;
       }
 
       /* 2. 顶部原生导航条：100% 还原 DeepSeek App (左侧双横线，右侧(+)，中间留白，无多余设置按钮) */
