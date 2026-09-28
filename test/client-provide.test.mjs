@@ -236,3 +236,33 @@ test('宿主侧边栏展开按钮必须同时匹配中英文文案', () => {
     '新建会话按钮必须同时匹配中文「新建会话」与英文 "New session"（否则英文界面 (+) 失效）',
   );
 });
+
+// ---------- 7. 移动端顶栏会话标题：优先读宿主会话层级面包屑 ----------
+//
+// 0.1.7 起 sessions.list 快照没有 current 字段，旧方案 snap.current 恒为 undefined →
+// 顶栏标题永远「新会话」（用户报障：每个会话标题都叫新会话）。现改为读宿主
+// 「会话层级」面包屑 nav（PC 顶栏同源）：稳定锚点是 aria-label（中英双语），
+// 最后一个 crumb 即当前会话标题；空会话时无 crumbs 回退「新会话」。
+
+test('移动端顶栏标题读取宿主会话层级面包屑（中英文锚点）', () => {
+  assert.match(
+    indexSource,
+    /nav\[aria-label="Session hierarchy"\], nav\[aria-label="会话层级"\]/,
+    '必须按中英文 aria-label 定位宿主会话层级面包屑（否则英文界面取不到标题）',
+  );
+  assert.match(
+    indexSource,
+    /readHostSessionTitle/,
+    '应有独立的宿主标题读取函数',
+  );
+  assert.match(
+    indexSource,
+    /MOBILE_TITLE_FALLBACK_TEXT/,
+    '应有「新会话」回退常量',
+  );
+  assert.match(
+    indexSource,
+    /querySelector\('\.dsh-mobile-header-title'\)/,
+    '应仍操作移动端顶栏标题元素',
+  );
+});

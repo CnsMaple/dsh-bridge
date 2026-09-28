@@ -3995,22 +3995,71 @@ function setupMobileExperience(rpcCall, ctx) {
   }
 
   // 绑定会话标题实时同步 (切换会话或收到首条回复自动更新)
+  //
+  // 标题来源优先取宿主「会话层级」面包屑（PC 顶栏同源）：宿主自己维护当前会话标题，
+  // 随会话切换实时更新，0.1.7 的 sessions.list 快照没有 current 字段（旧方案取不到 → 
+  // 顶栏永远显示「新会话」）。crumbs 的 nav 带稳定 aria-label（中英双语），最后一级
+  // crumb 就是当前会话标题；空会话时无 crumbs，回退「新会话」。
+  const MOBILE_TITLE_FALLBACK_TEXT = '新会话';
+  // 取宿主会话层级面包屑的「当前会话标题」。稳定锚点是 nav 的 aria-label（中英双语）；
+  // 标题是最后一个 crumbSeg 里的「crumb（当前段）」，不是 nav 里任意最后一个 span——
+  // 子 agent 会话会把末级 crumb 换成 dropdown（内含计数 span），取最后一个 span 会拿到
+  // 计数文本。crumb 本身是 span/button 且带 crumbCurrent 类；取不到则回退空串。
+  const readHostSessionTitle = () => {
+    if (typeof document === 'undefined') return '';
+    const nav = document.querySelector('nav[aria-label="Session hierarchy"], nav[aria-label="会话层级"]');
+    if (!nav) return '';
+    const segs = [...nav.querySelectorAll('[class*="crumbSeg"]')];
+    const lastSeg = segs[segs.length - 1];
+    const lastCrumb = lastSeg
+      ? lastSeg.querySelector('[class*="crumbCurrent"]') || lastSeg.querySelector('span, button')
+      : null;
+    if (!lastCrumb) return '';
+    const text = ((lastCrumb.getAttribute?.('aria-label') || lastCrumb.textContent) || '').trim();
+    // 非标题节点（如子 agent 计数 "2 items"/"2 项"）不应被当作标题
+    if (!text || /^\d+\s+(item|items|项|个)/i.test(text)) return '';
+    return text;
+  };
+  const setTitleText = (next) => {
+    if (titleEl.textContent === next) return; // 写前比对：避免每帧重写触发 observer 自循环
+    titleEl.innerText = next;
+  };
   const syncMobileTitle = () => {
     if (!titleEl) titleEl = document.querySelector('.dsh-mobile-header-title');
     if (!titleEl) return;
+    // 1) 宿主当前会话标题（最准确，随切换实时更新）
+    const hostTitle = readHostSessionTitle();
+    if (hostTitle) {
+      setTitleText(hostTitle);
+      return;
+    }
+    // 2) 兜底：从 sessions.list 快照尝试（旧宿主可能有 current；新宿主空会话时回退）
     const snap = ctx?.sessions?.list?.getSnapshot?.();
     if (!snap) return;
     const cur = snap.current ? snap.byId?.[snap.current] : null;
     if (!cur || cur.blank) {
-      titleEl.innerText = '新会话';
+      setTitleText(MOBILE_TITLE_FALLBACK_TEXT);
     } else {
-      titleEl.innerText = cur.displayTitle || cur.title || '会话';
+      setTitleText(cur.displayTitle || cur.title || MOBILE_TITLE_FALLBACK_TEXT);
     }
   };
 
   syncMobileTitle();
   if (typeof ctx?.sessions?.list?.subscribe === 'function') {
     ctx.sessions.list.subscribe(syncMobileTitle);
+  }
+  // 宿主会话层级面包屑是 React 渲染，切换会话/标题变化未必走 ctx.sessions.list 通知；
+  // 补一个 MutationObserver 守护顶栏标题始终与宿主当前会话一致。
+  if (typeof MutationObserver !== 'undefined') {
+    let mobileTitleRaf = 0;
+    const mobileTitleObserver = new MutationObserver(() => {
+      if (mobileTitleRaf) return;
+      mobileTitleRaf = requestAnimationFrame(() => {
+        mobileTitleRaf = 0;
+        syncMobileTitle();
+      });
+    });
+    mobileTitleObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
   }
   if (typeof ctx?.sessions?.active?.subscribe === 'function') {
     ctx.sessions.active.subscribe(() => {

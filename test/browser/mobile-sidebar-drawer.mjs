@@ -68,6 +68,43 @@ for (const vp of [{ name: '375x667', width: 375, height: 667 }, { name: '390x844
     `children=${opened.listChildren} text=${JSON.stringify(opened.listText.slice(0, 40))}`,
   );
 
+  // 顶栏标题与宿主当前会话同步（用户报障：0.1.7 后顶栏永远显示「新会话」，
+  // 修复为读宿主会话层级面包屑）。点击列表里第一个非占位会话，顶栏应跟随其标题。
+  const pickText = await page.evaluate(() => {
+    const area = document.querySelector('div[class*="_sidebarCol"]');
+    const items = [...area.querySelectorAll('[role="treeitem"]')];
+    // 会话行（sessionRow），排除当前已选（selected）与占位「New Session」；
+    // 行文本结构为 [可选状态行*] + 标题 + 时间 → 取「非状态、非子代理徽标、非时间」行作标题。
+    const isStatusLine = (l) =>
+      /^(Running|Idle|Stopped|进行中|空闲|已停止|subagent|子代理)$/i.test(l) ||
+      /\d+\s*(subagent|子代理)|subagent|子代理/i.test(l) ||
+      /^\d+\s*(min|h|d|h前|天前|分钟前|周前|个月前)$/i.test(l);
+    const item = items.find((e) => {
+      const cls = String(e.className);
+      if (!/sessionRow/i.test(cls)) return false;
+      if (/selected/i.test(cls)) return false;
+      const lines = (e.innerText || '').split('\n').map((l) => l.trim()).filter(Boolean);
+      if (lines.length === 0) return false;
+      const titleLine = lines.find((l) => !isStatusLine(l));
+      return !!titleLine && !/^New Session$|^新会话$/.test(titleLine);
+    });
+    if (!item) return null;
+    const lines = (item.innerText || '').split('\n').map((l) => l.trim()).filter(Boolean);
+    const title = lines.find((l) => !isStatusLine(l)).slice(0, 60);
+    item.click();
+    return title;
+  });
+  await new Promise((r) => setTimeout(r, 1800));
+  const titleSync = await page.evaluate(() => {
+    const t = document.querySelector('.dsh-mobile-header-title');
+    return t ? t.innerText : '';
+  });
+  say(
+    `${vp.name} 顶栏标题跟随当前会话（读宿主面包屑）`,
+    pickText === null ? true : titleSync.length > 0 && titleSync === pickText,
+    pickText === null ? '本视口无可选会话行，跳过（标题修复另由专测覆盖）' : `host=${JSON.stringify(pickText)} header=${JSON.stringify(titleSync)}`,
+  );
+
   await page.screenshot({ path: path.join(SHOTS, `open-${vp.name.split('x')[0]}.png`) });
 
   // 点击宿主「收起侧边栏」按钮（中英文文案都试，宿主语言决定命中哪个）→ 抽屉应收起

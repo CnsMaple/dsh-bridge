@@ -5954,21 +5954,54 @@ function setupMobileExperience(rpcCall, ctx) {
     header.appendChild(rightBtn);
     document.body.appendChild(header);
   }
+  const MOBILE_TITLE_FALLBACK_TEXT = "\u65B0\u4F1A\u8BDD";
+  const readHostSessionTitle = () => {
+    if (typeof document === "undefined") return "";
+    const nav = document.querySelector('nav[aria-label="Session hierarchy"], nav[aria-label="\u4F1A\u8BDD\u5C42\u7EA7"]');
+    if (!nav) return "";
+    const segs = [...nav.querySelectorAll('[class*="crumbSeg"]')];
+    const lastSeg = segs[segs.length - 1];
+    const lastCrumb = lastSeg ? lastSeg.querySelector('[class*="crumbCurrent"]') || lastSeg.querySelector("span, button") : null;
+    if (!lastCrumb) return "";
+    const text = (lastCrumb.getAttribute?.("aria-label") || lastCrumb.textContent || "").trim();
+    if (!text || /^\d+\s+(item|items|项|个)/i.test(text)) return "";
+    return text;
+  };
+  const setTitleText = (next) => {
+    if (titleEl.textContent === next) return;
+    titleEl.innerText = next;
+  };
   const syncMobileTitle = () => {
     if (!titleEl) titleEl = document.querySelector(".dsh-mobile-header-title");
     if (!titleEl) return;
+    const hostTitle = readHostSessionTitle();
+    if (hostTitle) {
+      setTitleText(hostTitle);
+      return;
+    }
     const snap = ctx?.sessions?.list?.getSnapshot?.();
     if (!snap) return;
     const cur = snap.current ? snap.byId?.[snap.current] : null;
     if (!cur || cur.blank) {
-      titleEl.innerText = "\u65B0\u4F1A\u8BDD";
+      setTitleText(MOBILE_TITLE_FALLBACK_TEXT);
     } else {
-      titleEl.innerText = cur.displayTitle || cur.title || "\u4F1A\u8BDD";
+      setTitleText(cur.displayTitle || cur.title || MOBILE_TITLE_FALLBACK_TEXT);
     }
   };
   syncMobileTitle();
   if (typeof ctx?.sessions?.list?.subscribe === "function") {
     ctx.sessions.list.subscribe(syncMobileTitle);
+  }
+  if (typeof MutationObserver !== "undefined") {
+    let mobileTitleRaf = 0;
+    const mobileTitleObserver = new MutationObserver(() => {
+      if (mobileTitleRaf) return;
+      mobileTitleRaf = requestAnimationFrame(() => {
+        mobileTitleRaf = 0;
+        syncMobileTitle();
+      });
+    });
+    mobileTitleObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
   }
   if (typeof ctx?.sessions?.active?.subscribe === "function") {
     ctx.sessions.active.subscribe(() => {
