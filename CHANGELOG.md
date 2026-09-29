@@ -4,6 +4,27 @@
 
 ---
 
+## [v2.12.1] - 2026-09-29
+
+> 本版修复远程访问下【设置 → 模型】报「加载提供方目录失败: settings are unavailable in this browser」（上游 issue #3）。
+
+### 🐞 修复
+
+- **远程页面缺少「承载 Host」标记**：DSH 客户端按 `transport?.ownsHost === true || isLoopbackHostname(hostname)` 判定页面是否拥有宿主（`@deepseek-ai/dsh-client-connection`，0.1.x 与 0.2.0 的产物均已核对），设置面板再据此选择持久化域——非回环页面只给内存域，`SettingsDocumentStore` 根本不创建，于是模型页整页不可用。**接口本身是通的**（局域网页面手动 `POST /api/settings/describe` 返回 200 + `writable:true`），缺的只是这个标记。现由代理在返回 HTML 的 `<head>` 注入 `__DSH_TRANSPORT__.ownsHost = true`。
+- **注入顺序**：片段与其它注入一起紧跟 `<head>` 插入，而宿主把 `globalThis["__DSH_BOOT__"]` 放在其后（实测 0.2.0 首页：`<head>` 在 35 字节处、boot 在 5429 字节处），client 模块 boot 时必然读到标记；上游 gzip 修复（删除转发 `accept-encoding`）已保证代理拿到明文 HTML，注入不会被压缩响应跳过。
+- **注入范围**：仅非回环 authority（局域网 IP / 隧道域名）注入——回环页面本就命中 `isLoopbackHostname`；注入点位于访问认证闸门之后的代理分支内，未通过认证的请求拿不到 GUI HTML。脚本用 `Object.assign(t || {}, …)` 合并，已有 `ownsHost: true` 时原样保留，不顶掉宿主或其它插件的 `__DSH_TRANSPORT__`。
+
+### 🧪 验收
+
+- 新增 `test/owns-host-bootstrap.test.mjs`：回环 authority 判定（含裸 IPv6）、注入必须早于 `__DSH_BOOT__`、按标记去重、回环页面不注入、脚本语义（保留既有字段 / 已是 true 时不整体覆盖）、代理分支接线断言；`npm test` 355/355 通过。
+- 真机路径实测：桌面版（DSH 0.2.0-rc.2）页面注入后 `window.__DSH_TRANSPORT__.ownsHost === true`，【设置 → 模型】正常渲染提供商目录（DeepSeek / bailian / 添加模型提供商）；非回环 origin（`dsh.test:3082`）验证注入同样生效。
+
+### ⚠️ 安全说明
+
+- 该标记使远程页面**可写 Host 级设置**——这正是「在手机上配置模型」所需的能力，但也意味着持有访问凭证的人能改宿主设置。请务必开启「访问认证」并设置访问密码；未设密码时任何拿到地址的人都能改宿主设置。
+
+---
+
 ## [v2.12.0] - 2026-09-29
 
 > 本版为**宿主 0.2.x 适配版**：桌面版（Electron，内置 DSH 0.2.0-rc.2）上移动端样式不再随宿主构建哈希静默失效。

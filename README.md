@@ -419,6 +419,15 @@ dsh plugin --profile web add @wenbin_wb/dsh-bridge@latest
   3. **一键备份迁移**：支持在「运维监控」Tab 内一键导出全局配置 `.json` 文件，方便跨设备迁移。
 </details>
 
+<details>
+  <summary><b>Q5: 手机上进【设置 → 模型】提示「加载提供方目录失败: settings are unavailable in this browser」？</b></summary>
+  <br/>
+
+  1. **已在 v2.12.1 修复**：DSH 客户端按「页面是否拥有宿主」决定设置面板的持久化域——局域网 IP / 隧道域名都不是回环主机名，缺 `__DSH_TRANSPORT__.ownsHost` 标记时只给内存域，模型页因此整页不可用（接口其实是通的）。现在代理会在返回 HTML 的 `<head>` 注入该标记（位置早于 `__DSH_BOOT__`），且只对回环以外的页面注入；
+  2. **升级后请刷新页面**：Host 标记在页面加载时读取，升级插件后需刷新（或重新扫码）才会生效；
+  3. **安全提示**：该标记让远程页面具备写 Host 级设置的能力（这正是「在手机上配置模型」所需），请务必开启访问认证并设置密码。
+</details>
+
 ---
 
 ## 🛠️ 开发与贡献

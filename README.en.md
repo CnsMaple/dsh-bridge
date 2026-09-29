@@ -397,6 +397,15 @@ Open **"Maintenance"** tab to monitor health and manage operations:
   3. **Backup & Migration**: 1-click `.json` export/import in Maintenance tab.
 </details>
 
+<details>
+  <summary><b>Q5: On my phone, Settings → Models shows "settings are unavailable in this browser"?</b></summary>
+  <br/>
+
+  1. **Fixed in v2.12.1**: the DSH client decides the settings persistence domain from whether the page "owns the host" — a LAN IP or tunnel hostname is not a loopback hostname, so without the `__DSH_TRANSPORT__.ownsHost` marker the page only gets the in-memory domain and the Models page stays inert (the API itself works). The proxy now injects that marker into the served HTML `<head>` (before `__DSH_BOOT__`), and only for non-loopback pages;
+  2. **Reload after upgrading**: the marker is read at page load, so refresh (or rescan the QR code) once the plugin is upgraded;
+  3. **Security note**: the marker lets a remote page write host-level settings (that is exactly what "configure models from your phone" needs) — always enable access authentication with a password.
+</details>
+
 ---
 
 ## 🛠️ Development & Contribution
