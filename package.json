@@ -1,8 +1,8 @@
 {
   "name": "@wenbin_wb/dsh-bridge",
-  "version": "2.11.3",
+  "version": "2.12.0",
   "description": "手机扫码即可在移动端/公网继续用 DeepSeek Harness，人不在电脑前也能接着干。一键局域网二维码、Cloudflare 公网隧道、自建隧道与微信 / QQ / 飞书 / Telegram Bot（多工作区/会话持久化/媒体/卡片审批/流式输出），无需自己搭公网服务器。",
-  "releaseNotes": "【v2.11.3】移动端顶栏标题修复 + 国际化（跟随 DSH 主体语言）\n• 修复：移动端顶栏会话标题恒为「新会话」——0.1.7 起会话快照无 current 字段，改为读宿主会话层级面包屑（PC 顶栏同源）\n• 新功能：移动端自绘 UI 文案国际化，随 DSH 主体语言切换（中/英）\n• 新功能：插件管理页/市场显示本插件的本地化名称（locale/en.json + zh.json）\n• 说明：纯前端改动 + 包元数据，刷新页面即生效",
+  "releaseNotes": "【v2.12.0】宿主 0.2.x 适配：移动端样式不再随宿主哈希前缀失效\n• 修复：DSH 客户端包的类名是「构建哈希_局部类名」，0.2.x 换了哈希前缀（wSkVaW_scrollBody → Dc7zOa_scrollBody），旧版把前缀写死在 130+ 处选择器里，桌面版（DSH 0.2.0-rc.2）上移动端样式因此大面积静默失效\n• 新功能：新增跨版本兼容层 client/host-classes.js——源码只写局部类名，运行时按分组表展开成 :is(0.1.x, 0.2.x) 并集，新增宿主版本只需补一个前缀\n• 覆盖分组：设置弹窗 / 会话区 / 输入区 / 侧边栏 / 工作区列表 / 模型选择器 / 权限预设（补齐 wCInkW、Dc7zOa、RlGAzG、_2H3hWW、_9lTDKa、wq12jW、dlU_AG）\n• 变更：面包屑改按宿主稳定 aria-label 锚点隐藏；Session 导出按钮改按 headerUtilities 容器匹配（0.2 起无独立局部类名）\n• 验收：新增 host-selector-coverage 浏览器验收与 host-classes 单元测试，在 0.1.7-rc.2 与桌面版 0.2.0-rc.2 上均 29/29 通过\n• 说明：纯前端改动，重装插件后刷新页面即生效\n\n【v2.11.3】移动端顶栏标题修复 + 国际化（跟随 DSH 主体语言）\n• 修复：移动端顶栏会话标题恒为「新会话」——0.1.7 起会话快照无 current 字段，改为读宿主会话层级面包屑（PC 顶栏同源）\n• 新功能：移动端自绘 UI 文案国际化，随 DSH 主体语言切换（中/英）\n• 新功能：插件管理页/市场显示本插件的本地化名称（locale/en.json + zh.json）\n• 说明：纯前端改动 + 包元数据，刷新页面即生效",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
