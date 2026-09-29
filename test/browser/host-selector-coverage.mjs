@@ -148,6 +148,30 @@ for (const [group, local] of settingsAnchors) {
 }
 await page.screenshot({ path: `${SHOTS}/settings-${PORT}.png` });
 
+// ---- 4. 几何生效：≤480px 的「两级钻取」必须真的落地 ----
+// 只断言"选择器命中"不够——规则命中但被更高优先级覆盖时，界面依旧是坏的。
+// 390px 宽下宿主默认是「88px 图标轨道 + 内容列」，桥把它改成整宽分类列表：
+// 列表页隐藏内容区、导航占满面板宽度，通过这条断言才能证明样式确实生效。
+const geometry = await page.evaluate(
+  (navSel, optionsSel) => {
+    const nav = document.querySelector(navSel);
+    const options = document.querySelector(optionsSel);
+    const px = (el) => (el ? Math.round(el.getBoundingClientRect().width) : null);
+    return {
+      gate: document.documentElement.getAttribute('data-dshbr-drilldown'),
+      navWidth: px(nav),
+      optionsDisplay: options ? getComputedStyle(options).display : null,
+    };
+  },
+  hostSel('nav', 'settings'),
+  hostSel('options', 'settings'),
+);
+record(
+  '≤480px 两级钻取生效（列表页整宽 + 内容区收起）',
+  geometry.gate === 'ready' && (geometry.navWidth ?? 0) >= 250 && geometry.optionsDisplay === 'none',
+  JSON.stringify(geometry),
+);
+
 // ---- 4. 骨架生效：框架为顶栏让位 ----
 const frame = await page.evaluate(() => {
   const el = document.querySelector('[data-slot="root"] > div[class*="_frame"]');
