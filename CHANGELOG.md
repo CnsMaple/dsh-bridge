@@ -4,6 +4,26 @@
 
 ---
 
+## [v2.12.2] - 2026-09-30
+
+> 本版修复版本显示：桌面版把 PATH 上另一套 CLI 的版本当成了「当前 DSH 版本」。
+
+### 🐞 修复
+
+- **DSH 版本显示错版本 / 误报可升级**：`getDshVersion()` 原先只 spawn `dsh --version`。桌面版（Electron 内置 DSH 0.2.0-rc.2）里 PATH 上的 `dsh` 常是**另一套安装**（例如 npm 全局的 0.1.7-rc.2），于是面板显示「当前 v0.1.7-rc.2」，并对 npm 上真实的 0.2.0-rc.2 误报「DSH 有新版本 v0.2.0-rc.2（当前 v0.1.7-rc.2）」。现改为三级优先探测：
+  1. **宿主自报版本**：桌面版原生启动器注入的 `DSH_CLIENT_VERSION`（Web 形态的 `DSH_APP_VERSION`）——进程内直读，且必然是当前在跑的那一版；
+  2. **桌面版安装形态**：`<install>/resources/runtime/primary-runtime/runtime.json` 的 `desktopVersion`（桌面版宿主与 Electron 同进程，`process.execPath` 即应用主程序，可由此上溯）；
+  3. 回退 `dsh --version`（CLI / npm 全局 / 源码形态）。
+
+  前两级都不 spawn 子进程；非版本号形态的值一律拒绝，仍失败则保持原有的 10 分钟退避行为。
+- **插件自身版本在重装后仍显示旧值**：`VERSION` 取自 package.json，在宿主**启动时**读入内存。Host 侧代码不会被热加载（client 侧会），因此「重装插件但不重启 DSH」会出现「面板版本还是旧的、行为也没变」。安装/升级后请重启 DSH——桌面版即退出并重新打开应用；手机页面再刷新一次。
+
+### 🧪 验收
+
+- 新增 `test/dsh-version-detect.test.mjs`：宿主自报优先与形态校验、runtime.json 读取（含非版本值 / JSON 损坏 / 文件缺失）、SEMVER_LIKE 边界、探测顺序接线断言；`npm test` 359/359 通过。
+
+---
+
 ## [v2.12.1] - 2026-09-29
 
 > 本版修复远程访问下【设置 → 模型】报「加载提供方目录失败: settings are unavailable in this browser」（上游 issue #3）。
