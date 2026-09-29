@@ -1,7 +1,13 @@
 // 移动端适配样式（自 client/index.js 拆出的 ~800 行 CSS，T3.5）
 // 由 setupMobileExperience() 注入 <style id="dsh-bridge-mobile-styles">。
-// 注意：选择器硬编码了宿主构建产物的 CSS-module 哈希类名，宿主升级可能需要同步更新。
-export const MOBILE_STYLES_CSS = `
+//
+// 选择器里写的是宿主构建产物的 CSS-module 哈希类名，但**不必随宿主升级手工同步**：
+// 模板中的历史前缀在导出前由 host-classes.js 展开成多版本并集
+// （0.1.x：wSkVaW_* / hHd-Xa_* / VOzbGW_* …；0.2.x：Dc7zOa_* / _2H3hWW_* / wCInkW_* …）。
+// 新增宿主版本时只需往 host-classes.js 的分组表补一个前缀。
+import { expandHostClassSelectors } from './host-classes.js';
+
+export const MOBILE_STYLES_TEMPLATE = `
     /* DSH Bridge 隐藏 Tab 栏原生滚动条并保持平滑滑动 */
     .dsh-tabbar-container {
       scrollbar-width: none !important;
@@ -404,7 +410,11 @@ export const MOBILE_STYLES_CSS = `
         box-sizing: border-box !important;
       }
 
-      /* 移动端将原有嵌入在内容区的长面包屑标题隐藏（已统一提升至顶部导航栏正中），彻底释放第二行空间 */
+      /* 移动端将原有嵌入在内容区的长面包屑标题隐藏（已统一提升至顶部导航栏正中），彻底释放第二行空间。
+         0.2 起面包屑的局部类名从 crumbs 变为 crumb/crumbSeg，故再补宿主稳定的 aria-label 锚点
+         （与顶栏标题读取用的是同一个锚点，中英双语）。 */
+      nav[aria-label="Session hierarchy"],
+      nav[aria-label="会话层级"],
       nav[class*="wSkVaW_crumbs"],
       nav[class*="crumbs"],
       div[class*="wSkVaW_crumbs"],
@@ -446,7 +456,8 @@ export const MOBILE_STYLES_CSS = `
       }
 
       button[class*="nL4_yW_sessionLogButton"],
-      button[class*="sessionLogButton"] {
+      button[class*="sessionLogButton"],
+      div[class*="wSkVaW_headerUtilities"] button:not(.dsh-header-fold-btn) {
         min-width: 28px !important;
         width: 28px !important;
         height: 28px !important;
@@ -464,18 +475,21 @@ export const MOBILE_STYLES_CSS = `
       }
 
       button[class*="nL4_yW_sessionLogButton"]:hover:not(:disabled),
-      button[class*="sessionLogButton"]:hover:not(:disabled) {
+      button[class*="sessionLogButton"]:hover:not(:disabled),
+      div[class*="wSkVaW_headerUtilities"] button:not(.dsh-header-fold-btn):hover:not(:disabled) {
         background: var(--dsw-alias-interactive-bg-hover, rgba(0, 0, 0, 0.06)) !important;
         color: var(--dsw-alias-label-primary, #111827) !important;
       }
 
       button[class*="nL4_yW_sessionLogButton"] span,
-      button[class*="sessionLogButton"] span {
+      button[class*="sessionLogButton"] span,
+      div[class*="wSkVaW_headerUtilities"] button:not(.dsh-header-fold-btn) span {
         display: none !important;
       }
 
       button[class*="nL4_yW_sessionLogButton"] svg,
-      button[class*="sessionLogButton"] svg {
+      button[class*="sessionLogButton"] svg,
+      div[class*="wSkVaW_headerUtilities"] button:not(.dsh-header-fold-btn) svg {
         width: 13px !important;
         height: 13px !important;
         margin: 0 !important;
@@ -1242,3 +1256,12 @@ export const MOBILE_STYLES_CSS = `
       }
     }
 `;
+
+/**
+ * 展开成跨宿主版本可用的最终样式（见 host-classes.js 的分组表）。
+ *
+ * 模板保留了历史（0.1.x）前缀便于检索，展开在模块求值时完成一次；
+ * 注入 <style id="dsh-bridge-mobile-styles"> 的是这一份。
+ * 结构断言/产物同步断言请比对 MOBILE_STYLES_TEMPLATE（产物里嵌的是模板原文）。
+ */
+export const MOBILE_STYLES_CSS = expandHostClassSelectors(MOBILE_STYLES_TEMPLATE);

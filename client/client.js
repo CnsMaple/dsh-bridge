@@ -31,8 +31,59 @@ __export(index_exports, {
 });
 module.exports = __toCommonJS(index_exports);
 
+// client/host-classes.js
+var HOST_CLASS_GROUPS = {
+  /** 设置弹窗（@deepseek-ai/dsh-client-ui-settings-general） */
+  settings: ["VOzbGW", "wCInkW"],
+  /** 会话区外壳与头部（dsh-client-ui-conversation） */
+  conversation: ["wSkVaW", "Dc7zOa"],
+  /** 输入区（composer）与底部工具栏 */
+  composer: ["uV2eYG", "RlGAzG"],
+  /** 侧边栏内部（dsh-client-ui-sidebar） */
+  sidebar: ["hHd-Xa", "_2H3hWW"],
+  /** 侧边栏的工作区/会话列表（dsh-client-ui-workspace） */
+  sidebarList: ["qDHVXG", "bhn1Oq", "_9lTDKa"],
+  /** 模型选择器（dsh-client-ui-model-selection） */
+  model: ["_7KE1Ra", "wq12jW"],
+  /** 权限预设选择器（dsh-client-ui-permission-presets） */
+  permission: ["Sh0Q9G", "iWlSmW", "dlU_AG"],
+  /** 工作区面板 / Tab 栏（第三方面板插件与历史版本，两套前缀都保留） */
+  panels: ["nArs4W", "workbench"],
+  /** Session 导出按钮（0.2 起该按钮无独立局部类名，样式改按 headerUtilities 容器匹配） */
+  sessionLog: ["nL4_yW"],
+  /** 子代理胶囊与展开菜单（历史版本） */
+  subagent: ["h8S2Va"],
+  /** 头部展开/收起按钮组（历史版本；0.2 起按 toggleCluster / _detailsCol 泛匹配） */
+  toggleCluster: ["W-zNGW"]
+};
+var HOST_PREFIX_TO_GROUP = /* @__PURE__ */ new Map();
+for (const [group, prefixes] of Object.entries(HOST_CLASS_GROUPS)) {
+  for (const prefix of prefixes) {
+    if (HOST_PREFIX_TO_GROUP.has(prefix)) {
+      throw new Error(`dsh-bridge: host class prefix ${prefix} listed in two groups`);
+    }
+    HOST_PREFIX_TO_GROUP.set(prefix, group);
+  }
+}
+var HOST_CLASS_SELECTOR = /([a-zA-Z]*)\[class\*="([A-Za-z0-9_-]+)_([A-Za-z0-9]+)"\]/g;
+function hostSel(local, group, tag = "") {
+  const prefixes = HOST_CLASS_GROUPS[group];
+  if (!prefixes) throw new Error(`dsh-bridge: unknown host class group "${group}"`);
+  const list = prefixes.map((prefix) => `${tag}[class*="${prefix}_${local}"]`);
+  return list.length === 1 ? list[0] : `:is(${list.join(",")})`;
+}
+function expandHostClassSelectors(text) {
+  return String(text ?? "").replace(HOST_CLASS_SELECTOR, (whole, tag, prefix, local) => {
+    const group = HOST_PREFIX_TO_GROUP.get(prefix);
+    if (!group) return whole;
+    const prefixes = HOST_CLASS_GROUPS[group];
+    if (prefixes.length < 2) return whole;
+    return `:is(${prefixes.map((entry) => `${tag}[class*="${entry}_${local}"]`).join(",")})`;
+  });
+}
+
 // client/mobile-styles.js
-var MOBILE_STYLES_CSS = `
+var MOBILE_STYLES_TEMPLATE = `
     /* DSH Bridge \u9690\u85CF Tab \u680F\u539F\u751F\u6EDA\u52A8\u6761\u5E76\u4FDD\u6301\u5E73\u6ED1\u6ED1\u52A8 */
     .dsh-tabbar-container {
       scrollbar-width: none !important;
@@ -435,7 +486,11 @@ var MOBILE_STYLES_CSS = `
         box-sizing: border-box !important;
       }
 
-      /* \u79FB\u52A8\u7AEF\u5C06\u539F\u6709\u5D4C\u5165\u5728\u5185\u5BB9\u533A\u7684\u957F\u9762\u5305\u5C51\u6807\u9898\u9690\u85CF\uFF08\u5DF2\u7EDF\u4E00\u63D0\u5347\u81F3\u9876\u90E8\u5BFC\u822A\u680F\u6B63\u4E2D\uFF09\uFF0C\u5F7B\u5E95\u91CA\u653E\u7B2C\u4E8C\u884C\u7A7A\u95F4 */
+      /* \u79FB\u52A8\u7AEF\u5C06\u539F\u6709\u5D4C\u5165\u5728\u5185\u5BB9\u533A\u7684\u957F\u9762\u5305\u5C51\u6807\u9898\u9690\u85CF\uFF08\u5DF2\u7EDF\u4E00\u63D0\u5347\u81F3\u9876\u90E8\u5BFC\u822A\u680F\u6B63\u4E2D\uFF09\uFF0C\u5F7B\u5E95\u91CA\u653E\u7B2C\u4E8C\u884C\u7A7A\u95F4\u3002
+         0.2 \u8D77\u9762\u5305\u5C51\u7684\u5C40\u90E8\u7C7B\u540D\u4ECE crumbs \u53D8\u4E3A crumb/crumbSeg\uFF0C\u6545\u518D\u8865\u5BBF\u4E3B\u7A33\u5B9A\u7684 aria-label \u951A\u70B9
+         \uFF08\u4E0E\u9876\u680F\u6807\u9898\u8BFB\u53D6\u7528\u7684\u662F\u540C\u4E00\u4E2A\u951A\u70B9\uFF0C\u4E2D\u82F1\u53CC\u8BED\uFF09\u3002 */
+      nav[aria-label="Session hierarchy"],
+      nav[aria-label="\u4F1A\u8BDD\u5C42\u7EA7"],
       nav[class*="wSkVaW_crumbs"],
       nav[class*="crumbs"],
       div[class*="wSkVaW_crumbs"],
@@ -477,7 +532,8 @@ var MOBILE_STYLES_CSS = `
       }
 
       button[class*="nL4_yW_sessionLogButton"],
-      button[class*="sessionLogButton"] {
+      button[class*="sessionLogButton"],
+      div[class*="wSkVaW_headerUtilities"] button:not(.dsh-header-fold-btn) {
         min-width: 28px !important;
         width: 28px !important;
         height: 28px !important;
@@ -495,18 +551,21 @@ var MOBILE_STYLES_CSS = `
       }
 
       button[class*="nL4_yW_sessionLogButton"]:hover:not(:disabled),
-      button[class*="sessionLogButton"]:hover:not(:disabled) {
+      button[class*="sessionLogButton"]:hover:not(:disabled),
+      div[class*="wSkVaW_headerUtilities"] button:not(.dsh-header-fold-btn):hover:not(:disabled) {
         background: var(--dsw-alias-interactive-bg-hover, rgba(0, 0, 0, 0.06)) !important;
         color: var(--dsw-alias-label-primary, #111827) !important;
       }
 
       button[class*="nL4_yW_sessionLogButton"] span,
-      button[class*="sessionLogButton"] span {
+      button[class*="sessionLogButton"] span,
+      div[class*="wSkVaW_headerUtilities"] button:not(.dsh-header-fold-btn) span {
         display: none !important;
       }
 
       button[class*="nL4_yW_sessionLogButton"] svg,
-      button[class*="sessionLogButton"] svg {
+      button[class*="sessionLogButton"] svg,
+      div[class*="wSkVaW_headerUtilities"] button:not(.dsh-header-fold-btn) svg {
         width: 13px !important;
         height: 13px !important;
         margin: 0 !important;
@@ -1273,6 +1332,7 @@ var MOBILE_STYLES_CSS = `
       }
     }
 `;
+var MOBILE_STYLES_CSS = expandHostClassSelectors(MOBILE_STYLES_TEMPLATE);
 
 // client/unlock-manager.js
 var SESSION_KEY = "dsh_admin_token";
@@ -1543,7 +1603,7 @@ function registerSettingsNavIcon(resolveLabel = () => "\u8FDC\u7A0B\u8BBF\u95EE"
   const sync = () => {
     if (disposed) return;
     const currentLabel = typeof resolveLabel === "function" ? resolveLabel().trim() : "\u8FDC\u7A0B\u8BBF\u95EE";
-    const buttons = document.querySelectorAll('[role="dialog"] nav button, div[class*="VOzbGW_nav"] button');
+    const buttons = document.querySelectorAll(`[role="dialog"] nav button, ${hostSel("nav", "settings", "div")} button`);
     for (const button of buttons) {
       const text = button.textContent?.trim() || "";
       if (currentLabel.length > 0 && (text === currentLabel || text.includes(currentLabel))) {
@@ -1860,6 +1920,7 @@ if (typeof window !== "undefined") {
 var RESOURCE_URL_COMPAT = installResourceUrlCompat();
 if (typeof window !== "undefined") window.__dshResourceUrlCompat = RESOURCE_URL_COMPAT;
 var MOBILE_MAX_WIDTH = 767;
+var OPEN_PANEL_SELECTOR = `${hostSel("panel", "panels", "div")}:not([class*="panelHidden"])`;
 var SETTINGS_DRILLDOWN_MAX_WIDTH = 480;
 var DRILLDOWN_GATE_ATTR = "data-dshbr-drilldown";
 var DRILLDOWN_GATE_READY = "ready";
@@ -6012,11 +6073,11 @@ function setupSettingsDrilldown() {
     if (!isNarrow()) return;
     const target = event.target;
     if (!target || typeof target.closest !== "function") return;
-    const panel = target.closest('div[class*="VOzbGW_panel"]');
+    const panel = target.closest(hostSel("panel", "settings", "div"));
     if (!panel) return;
-    const nav = panel.querySelector('nav[class*="VOzbGW_nav"]');
+    const nav = panel.querySelector(hostSel("nav", "settings", "nav"));
     if (!nav || !nav.contains(target)) return;
-    if (target.closest('button[class*="VOzbGW_navCell"]')) {
+    if (target.closest(hostSel("navCell", "settings", "button"))) {
       panel.setAttribute(SETTINGS_VIEW_ATTR, SETTINGS_VIEW_DETAIL);
       if (nav.scrollTop) nav.scrollTop = 0;
       return;
@@ -6073,7 +6134,7 @@ function setupMobileExperience(rpcCall, ctx) {
     titleEl.className = "dsh-mobile-header-title";
     titleEl.innerText = "\u65B0\u4F1A\u8BDD";
     titleEl.onclick = () => {
-      const openPanels = document.querySelectorAll('div[class*="nArs4W_panel"]:not([class*="panelHidden"]), div[class*="workbench_panel"]:not([class*="panelHidden"])');
+      const openPanels = document.querySelectorAll(OPEN_PANEL_SELECTOR);
       openPanels.forEach((p) => p.classList.add("nArs4W_panelHidden"));
     };
     const rightBtn = document.createElement("button");
@@ -6087,7 +6148,7 @@ function setupMobileExperience(rpcCall, ctx) {
       </svg>
     `;
     rightBtn.onclick = () => {
-      const openPanels = document.querySelectorAll('div[class*="nArs4W_panel"]:not([class*="panelHidden"]), div[class*="workbench_panel"]:not([class*="panelHidden"])');
+      const openPanels = document.querySelectorAll(OPEN_PANEL_SELECTOR);
       openPanels.forEach((p) => p.classList.add("nArs4W_panelHidden"));
       const dshNewBtn = document.querySelector('button[aria-label="\u65B0\u5EFA\u4F1A\u8BDD"], button[aria-label="New session"]');
       if (dshNewBtn) dshNewBtn.click();
@@ -6153,7 +6214,7 @@ function setupMobileExperience(rpcCall, ctx) {
       }
       if (typeof window !== "undefined" && window.innerWidth <= MOBILE_MAX_WIDTH) {
         document.body.classList.remove("dsh-workbench-open");
-        const openPanels = document.querySelectorAll('div[class*="nArs4W_panel"]:not([class*="panelHidden"]), div[class*="workbench_panel"]:not([class*="panelHidden"])');
+        const openPanels = document.querySelectorAll(OPEN_PANEL_SELECTOR);
         openPanels.forEach((p) => p.classList.add("nArs4W_panelHidden"));
       }
     });
@@ -6164,7 +6225,7 @@ function setupMobileExperience(rpcCall, ctx) {
       document.querySelectorAll(".dsh-mobile-panel-close-btn").forEach((btn) => btn.remove());
       return;
     }
-    const panels = document.querySelectorAll('div[class*="nArs4W_panel"]:not([class*="panelHidden"]), div[class*="workbench_panel"]:not([class*="panelHidden"])');
+    const panels = document.querySelectorAll(OPEN_PANEL_SELECTOR);
     panels.forEach((p) => {
       const bar = p.querySelector('div[class*="tabBar"], div[class*="nArs4W_tabBar"]');
       if (bar && !bar.querySelector(".dsh-mobile-panel-close-btn")) {
@@ -6294,7 +6355,8 @@ function setupMobileExperience(rpcCall, ctx) {
       if (deltaX > 0 && touchStartX <= 35) {
         document.body.classList.add("dsh-drawer-open");
         const collapsedToggle = document.querySelector(
-          'div[class*="hHd-Xa_collapsed"] button[class*="hHd-Xa_toggle"], button[aria-label*="\u6253\u5F00\u4FA7\u8FB9\u680F"], button[title*="\u6253\u5F00\u4FA7\u8FB9\u680F"], button[aria-label*="Open sidebar"], button[title*="Open sidebar"]'
+          // 折叠态侧边栏里的宿主「展开」按钮：类名按版本展开，aria-label 作为兜底锚点
+          `${hostSel("collapsed", "sidebar", "div")} ${hostSel("toggle", "sidebar", "button")}, button[aria-label*="\u6253\u5F00\u4FA7\u8FB9\u680F"], button[title*="\u6253\u5F00\u4FA7\u8FB9\u680F"], button[aria-label*="Open sidebar"], button[title*="Open sidebar"]`
         );
         if (collapsedToggle) collapsedToggle.click();
       } else if (deltaX < 0 && document.body.classList.contains("dsh-drawer-open")) {
@@ -7048,7 +7110,7 @@ function setupComposerCollapse() {
   const getFoldBtn = () => {
     const existing = document.querySelector(".dsh-header-fold-btn");
     if (existing) return existing;
-    const utils = document.querySelector('div[class*="wSkVaW_headerUtilities"], div[class*="headerUtilities"]');
+    const utils = document.querySelector(hostSel("headerUtilities", "conversation", "div"));
     const logBtn = document.querySelector('button[class*="sessionLogButton"], button[class*="nL4_yW_sessionLogButton"]');
     if (!utils) return null;
     const btn = document.createElement("button");

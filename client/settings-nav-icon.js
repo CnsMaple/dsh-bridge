@@ -9,6 +9,8 @@
 // 监听设置弹窗挂载，定位到文本匹配「远程访问」的 nav 按钮，通过 CSS mask 将原生齿轮
 // 替换为专属的「手机 + 远程无线连接」矢量图标，颜色跟随 currentColor 保持原生悬停与激活态一致。
 
+import { hostSel } from './host-classes.js';
+
 export const SETTINGS_NAV_MARKER = 'data-dsh-bridge-settings-nav';
 
 /**
@@ -62,7 +64,9 @@ export function registerSettingsNavIcon(resolveLabel = () => '远程访问') {
   const sync = () => {
     if (disposed) return;
     const currentLabel = typeof resolveLabel === 'function' ? resolveLabel().trim() : '远程访问';
-    const buttons = document.querySelectorAll('[role="dialog"] nav button, div[class*="VOzbGW_nav"] button');
+    // 设置弹窗的分类按钮：'[role="dialog"] nav button' 本身就足够泛化，
+    // 类名分支按宿主版本展开（0.1.x VOzbGW_nav / 0.2.x wCInkW_nav）。
+    const buttons = document.querySelectorAll(`[role="dialog"] nav button, ${hostSel('nav', 'settings', 'div')} button`);
     for (const button of buttons) {
       const text = button.textContent?.trim() || '';
       if (currentLabel.length > 0 && (text === currentLabel || text.includes(currentLabel))) {

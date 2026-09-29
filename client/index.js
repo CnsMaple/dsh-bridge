@@ -1,4 +1,5 @@
 import { MOBILE_STYLES_CSS } from './mobile-styles.js'
+import { hostSel } from './host-classes.js'
 import {
   getAdminToken, clearAdminToken,
   queuePendingOperation, unlockAdmin, onUnlocked,
@@ -49,6 +50,11 @@ if (typeof window !== 'undefined') window.__dshResourceUrlCompat = RESOURCE_URL_
 // 故桥的移动端分支一律取「<= 767」，与 mobile-styles.js 的 @media (max-width: 767px) 对齐，
 // 避免 768px 单点上"桥渲染顶栏、宿主却按桌面（push）布局"的错位。
 const MOBILE_MAX_WIDTH = 767;
+
+// 工作区面板 / 多 Tab 面板容器：宿主与第三方面板插件的各版本前缀都收在
+// host-classes.js 的 panels 分组里统一展开；panelHidden 是桥自己打的收起标记，
+// 故 :is(...) 之后仍需排除它。
+const OPEN_PANEL_SELECTOR = `${hostSel('panel', 'panels', 'div')}:not([class*="panelHidden"])`;
 
 // 设置中心「两级钻取」的窄屏断点：必须与 mobile-styles.js 的
 // `@media (max-width: 480px)` 6.2 块保持一致（改一处必须改另一处）。
@@ -3892,13 +3898,13 @@ function setupSettingsDrilldown() {
     const target = event.target;
     if (!target || typeof target.closest !== 'function') return;
 
-    const panel = target.closest('div[class*="VOzbGW_panel"]');
+    const panel = target.closest(hostSel('panel', 'settings', 'div'));
     if (!panel) return;
-    const nav = panel.querySelector('nav[class*="VOzbGW_nav"]');
+    const nav = panel.querySelector(hostSel('nav', 'settings', 'nav'));
     if (!nav || !nav.contains(target)) return;
 
     // 点分类行 → 进入详情页（宿主自身的 onClick 负责切换 activeId，这里不拦截）
-    if (target.closest('button[class*="VOzbGW_navCell"]')) {
+    if (target.closest(hostSel('navCell', 'settings', 'button'))) {
       panel.setAttribute(SETTINGS_VIEW_ATTR, SETTINGS_VIEW_DETAIL);
       if (nav.scrollTop) nav.scrollTop = 0;
       return;
@@ -3973,7 +3979,7 @@ function setupMobileExperience(rpcCall, ctx) {
     titleEl.className = 'dsh-mobile-header-title';
     titleEl.innerText = '新会话';
     titleEl.onclick = () => {
-      const openPanels = document.querySelectorAll('div[class*="nArs4W_panel"]:not([class*="panelHidden"]), div[class*="workbench_panel"]:not([class*="panelHidden"])');
+      const openPanels = document.querySelectorAll(OPEN_PANEL_SELECTOR);
       openPanels.forEach((p) => p.classList.add('nArs4W_panelHidden'));
     };
 
@@ -3989,7 +3995,7 @@ function setupMobileExperience(rpcCall, ctx) {
       </svg>
     `;
     rightBtn.onclick = () => {
-      const openPanels = document.querySelectorAll('div[class*="nArs4W_panel"]:not([class*="panelHidden"]), div[class*="workbench_panel"]:not([class*="panelHidden"])');
+      const openPanels = document.querySelectorAll(OPEN_PANEL_SELECTOR);
       openPanels.forEach((p) => p.classList.add('nArs4W_panelHidden'));
       // 宿主新建会话按钮文案随语言切换：中文「新建会话」/ 英文 "New session"（两者都要匹配，否则英文界面下 (+) 失效）
       const dshNewBtn = document.querySelector('button[aria-label="新建会话"], button[aria-label="New session"]');
@@ -4077,7 +4083,7 @@ function setupMobileExperience(rpcCall, ctx) {
       // 仅在移动端切换会话时自动收起右侧面板回到对话（PC端绝不干扰）
       if (typeof window !== 'undefined' && window.innerWidth <= MOBILE_MAX_WIDTH) {
         document.body.classList.remove('dsh-workbench-open');
-        const openPanels = document.querySelectorAll('div[class*="nArs4W_panel"]:not([class*="panelHidden"]), div[class*="workbench_panel"]:not([class*="panelHidden"])');
+        const openPanels = document.querySelectorAll(OPEN_PANEL_SELECTOR);
         openPanels.forEach((p) => p.classList.add('nArs4W_panelHidden'));
       }
     });
@@ -4090,7 +4096,7 @@ function setupMobileExperience(rpcCall, ctx) {
       document.querySelectorAll('.dsh-mobile-panel-close-btn').forEach(btn => btn.remove());
       return;
     }
-    const panels = document.querySelectorAll('div[class*="nArs4W_panel"]:not([class*="panelHidden"]), div[class*="workbench_panel"]:not([class*="panelHidden"])');
+    const panels = document.querySelectorAll(OPEN_PANEL_SELECTOR);
     panels.forEach((p) => {
       const bar = p.querySelector('div[class*="tabBar"], div[class*="nArs4W_tabBar"]');
       if (bar && !bar.querySelector('.dsh-mobile-panel-close-btn')) {
@@ -4270,7 +4276,8 @@ function setupMobileExperience(rpcCall, ctx) {
       if (deltaX > 0 && touchStartX <= 35) {
         document.body.classList.add('dsh-drawer-open');
         const collapsedToggle = document.querySelector(
-          'div[class*="hHd-Xa_collapsed"] button[class*="hHd-Xa_toggle"], button[aria-label*="打开侧边栏"], button[title*="打开侧边栏"], button[aria-label*="Open sidebar"], button[title*="Open sidebar"]',
+          // 折叠态侧边栏里的宿主「展开」按钮：类名按版本展开，aria-label 作为兜底锚点
+          `${hostSel('collapsed', 'sidebar', 'div')} ${hostSel('toggle', 'sidebar', 'button')}, button[aria-label*="打开侧边栏"], button[title*="打开侧边栏"], button[aria-label*="Open sidebar"], button[title*="Open sidebar"]`,
         );
         if (collapsedToggle) collapsedToggle.click();
       } else if (deltaX < 0 && document.body.classList.contains('dsh-drawer-open')) {
@@ -5163,7 +5170,7 @@ function setupComposerCollapse() {
   const getFoldBtn = () => {
     const existing = document.querySelector('.dsh-header-fold-btn');
     if (existing) return existing;
-    const utils = document.querySelector('div[class*="wSkVaW_headerUtilities"], div[class*="headerUtilities"]');
+    const utils = document.querySelector(hostSel('headerUtilities', 'conversation', 'div'));
     const logBtn = document.querySelector('button[class*="sessionLogButton"], button[class*="nL4_yW_sessionLogButton"]');
     if (!utils) return null;
     const btn = document.createElement('button');
