@@ -24,10 +24,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MOBILE_STYLES_CSS } from '../client/mobile-styles.js';
+import { MOBILE_STYLES_TEMPLATE } from '../client/mobile-styles.js';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const sourceCss = MOBILE_STYLES_CSS;
+const sourceCss = MOBILE_STYLES_TEMPLATE;
 const structureCss = sourceCss.replace(/\/\*[\s\S]*?\*\//g, ' ');
 const indexSource = readFileSync(resolve(repoRoot, 'client/index.js'), 'utf8');
 const bundle = readFileSync(resolve(repoRoot, 'client/client.js'), 'utf8');

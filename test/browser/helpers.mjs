@@ -8,6 +8,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getDshLoopbackCookie } from '../../lib/auth/dsh-native-cookie.js';
 
+// 宿主类名跨版本兼容层（局部类名 → 各版本前缀并集）：新验收脚本请用它构造选择器，
+// 不要再把 `VOzbGW_*` 这类 0.1.x 哈希前缀写进断言——宿主升级会让断言假失败。
+export { hostSel, HOST_CLASS_GROUPS, expandHostClassSelectors } from '../../client/host-classes.js';
+
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 /** 截图输出目录（scratch/ 被 .gitignore 忽略，验收产物不污染仓库） */
